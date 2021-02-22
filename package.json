@@ -1,0 +1,23 @@
+{
+  "name": "zac-screen-pop",
+  "version": "1.0.0",
+  "description": "zac-screen-pop",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SleepingRobot/zac-screen-pop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SleepingRobot/zac-screen-pop/issues"
+  },
+  "homepage": "https://github.com/SleepingRobot/zac-screen-pop#readme",
+  "devDependencies": {
+    "electron": "^11.3.0"
+  }
+}
