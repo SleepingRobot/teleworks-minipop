@@ -2,16 +2,17 @@
   "name": "zac-screen-pop",
   "version": "1.0.0",
   "description": "zac-screen-pop",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SleepingRobot/zac-screen-pop.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "LinkPoint Solutions",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/SleepingRobot/zac-screen-pop/issues"
