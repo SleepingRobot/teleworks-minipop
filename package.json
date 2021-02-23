@@ -20,5 +20,10 @@
   "homepage": "https://github.com/SleepingRobot/zac-screen-pop#readme",
   "devDependencies": {
     "electron": "^11.3.0"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "electron-is-dev": "^1.2.0",
+    "keytar": "^7.4.0"
   }
 }
