@@ -1,5 +1,4 @@
 const { app, BrowserWindow } = require('electron')
-const libphonenumber = require('libphonenumber-js')
 const isDev = require('electron-is-dev');
 const keytar = require('keytar')
 const gotTheLock = app.requestSingleInstanceLock()
@@ -12,10 +11,11 @@ app.whenReady().then(() => {
       console.log('Running in production');
   }
 
-  const number = app.commandLine.getSwitchValue("number")
-  const phoneNumber = libphonenumber.parsePhoneNumber(number)
-  console.log("cli number: " + number)
-  console.log("parsed number: " + phoneNumber.formatNational())
+  const cliNumber = app.commandLine.getSwitchValue("number")
+  const parsedNumber = parseNumber(cliNumber)
+  
+  console.log("cli number: " + cliNumber)
+  console.log("parsed number: " + parsedNumber)
 
   
   //keytar.setPassword('zac-screen-pop', 'redtail-userkey', 'secret');
@@ -28,6 +28,12 @@ app.whenReady().then(() => {
   });
 })
 
+function parseNumber (n) {
+  if (n.startsWith("+1")){
+    n = n.substring(2)
+  }
+  return n.replace(/\D/g,'')
+}
 
 function createWindow () {
   const win = new BrowserWindow({
