@@ -2,15 +2,37 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Hello World!</title>
+    <title>Redtail CRM Contact</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <style>
+        body {
+            background-color: linen;
+        }
+        
+        h1 {
+            font-size: medium;
+            font-weight: bold;
+        }
+
+        span {
+            font-size: medium;
+            font-weight: normal;
+        }
+    </style>
 </head>
-<body style="background: white;">
-    <h1>Hello World!</h1>
-    <p>
-        We are using node <script>document.write(process.versions.node)</script>,
-        Chrome <script>document.write(process.versions.chrome)</script>,
-        and Electron <script>document.write(process.versions.electron)</script>.
-    </p>
+<body>
+    <script>
+        window.electron.send('contact-data-request');
+        window.electron.receive('contact-data-reply', (contact) => {
+            document.getElementById("zacNumber").innerHTML = contact?.cli_number || "<Missing>";
+            document.getElementById("name").innerHTML = contact?.full_name || "<Missing>";
+            document.getElementById("category").innerHTML = contact?.category || "<Missing>";
+            document.getElementById("status").innerHTML = contact?.status || "<Missing>";
+        });
+    </script>
+    <h1>ZAC Number: <span id="zacNumber"></span></h1>
+    <h1>Name: <span id="name"></span></h1>
+    <h1>Category: <span id="category"></span></h1>
+    <h1>Status: <span id="status"></span></h1>
 </body>
 </html>

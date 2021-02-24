@@ -1,8 +1,9 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const isDev = require('electron-is-dev');
 const keytar = require('keytar')
 const gotTheLock = app.requestSingleInstanceLock()
 let screenPopWindow = null
+let contactData = {}
 
 app.whenReady().then(() => {
   if (isDev) {
@@ -13,18 +14,11 @@ app.whenReady().then(() => {
 
   const cliNumber = app.commandLine.getSwitchValue("number")
   const parsedNumber = parseNumber(cliNumber)
-  
-  console.log("cli number: " + cliNumber)
-  console.log("parsed number: " + parsedNumber)
 
-  
   //keytar.setPassword('zac-screen-pop', 'redtail-userkey', 'secret');
   const secret = keytar.getPassword('zac-screen-pop', 'redtail-userkey')
   secret.then((s) => {
-    //LookupRedtailContact(s, '+1-555-456-7890')
-    //LookupRedtailContact(s, '5554567890')
-    console.log("secret: " + s)
-    app.quit()
+    lookupRedtailContact(s, cliNumber, parsedNumber)
   });
 })
 
@@ -35,19 +29,7 @@ function parseNumber (n) {
   return n.replace(/\D/g,'')
 }
 
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: true
-    }
-  })
-  win.loadFile('index.html')
-}
-
-function LookupRedtailContact(userkey, phoneNumber) {
+function lookupRedtailContact(userkey, cliNumber, parsedNumber) {
   // Prepare HTTP request to Redtail CRM API
   const { net } = require('electron')
   const request = net.request({
@@ -55,7 +37,7 @@ function LookupRedtailContact(userkey, phoneNumber) {
     protocol: 'https:',
     hostname: 'smf.crm3.redtailtechnology.com',
     port: 443,
-    path: '/api/public/v1/contacts/search?phone_number=' + phoneNumber 
+    path: '/api/public/v1/contacts/search?phone_number=' + parsedNumber 
   })
   request.setHeader("Authorization", userkey)
   request.setHeader("include", "addresses,phones,emails,urls")
@@ -64,25 +46,42 @@ function LookupRedtailContact(userkey, phoneNumber) {
   // Process HTTP response from Redtail CRM API
   request.on('response', (response) => {
     //console.log(`STATUS: ${response.statusCode}`)
-    //console.log(`HEADERS: ${JSON.stringify(response.headers)}`)
-    response.on('data', (chunk) => {
-      console.log(`BODY: ${chunk}`)
-    })
-    response.on('end', () => {
-      console.log('No more data in response.')
+    response.on('data', (d) => {
+      const resp = JSON.parse(d)
+      if (resp?.contacts?.length > 0) {
+        resp.contacts[0].cli_number = cliNumber
+        contactData = resp.contacts[0]
+        renderScreenPop()
+      }
     })
   })
   request.end()
 }
 
-// app.on('window-all-closed', () => {
-//   if (process.platform !== 'darwin') {
-//     app.quit()
-//   }
-// })
+function renderScreenPop() {
+  const win = new BrowserWindow({
+    width: 300,
+    height: 200,
+    webPreferences: {
+      allowRunningInsecureContent: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: `${__dirname}/preload.js`
+    }
+  })
+  win.removeMenu()
+  win.loadFile('index.html')
+  //win.webContents.openDevTools()
+}
 
-// app.on('activate', () => {  
-//   if (BrowserWindow.getAllWindows().length === 0) {
-//     createWindow()
-//   }
-// })
+ipcMain.on('contact-data-request', (event) => {
+  event.sender.send('contact-data-reply', contactData);
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
