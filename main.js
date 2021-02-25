@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const isDev = require('electron-is-dev');
 const keytar = require('keytar')
+let redtailUserKey = ''
 let redtailUser = ''
 let redtailLookupNumber = ''
 const gotTheLock = app.requestSingleInstanceLock()
@@ -22,9 +23,13 @@ app.whenReady().then(() => {
   validateRedtailUserKey()
 })
 
-ipcMain.on('contact-data-request', (event) => {
-  event.sender.send('contact-data-reply', contactData);
-});
+ipcMain.on('screenpop-request', (event) => {
+  event.sender.send('screenpop-reply', contactData);
+})
+
+ipcMain.on('info-request', (event) => {
+  event.sender.send('info-reply', redtailUser)
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -51,7 +56,8 @@ function validateRedtailUserKey() {
       // Process HTTP response from Redtail CRM API
       request.on('response', (response) => {
         if (response.statusCode == 200) {
-          // If valid, save user name and ID, then render window
+          // If valid, save user information, then render window
+          redtailUserKey = key
           response.on('data', (d) => {
             const resp = JSON.parse(d)
             const name = resp?.Name || '<Missing Name>'
@@ -73,16 +79,14 @@ function validateRedtailUserKey() {
 }
 
 function renderWindow() {
-  if(!redtailUser){
+  if(!redtailUser || !redtailUserKey){
     // Redtail user must be validated before proceeding
     validateRedtailUserKey()
   } else if (redtailLookupNumber ) {
-    // ... otherwise, if passed a Redtail phone number, parse it and
-    // query Redtail's API for matching contact to display in screen pop
-    const parsedNumber = parseNumber(redtailLookupNumber)
-    await keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
-      lookupRedtailContact(key, redtailLookupNumber, parsedNumber)
-    })
+    // ... otherwise, if passed a Redtail phone number, query Redtail's API
+    // for matching contact information, then display screen pop    
+    lookupRedtailContact(redtailLookupNumber)
+    renderScreenPop()
   } else {
     // ... otherwise, if valid account but no valid parameter passed, display Info window
     renderInfoWindow()
@@ -114,11 +118,14 @@ function renderScreenPop() {
     }
   })
   win.removeMenu()
-  win.loadFile('index.html')
+  win.loadFile('screenpop.html')
   //win.webContents.openDevTools()
 }
 
-function lookupRedtailContact(userKey, cliNumber, parsedNumber) {
+function lookupRedtailContact(cliNumber) {
+  // Parse number to format compatible with Redtail API
+  const parsedNumber = parseNumber(redtailLookupNumber)
+
   // Prepare HTTP request to Redtail CRM API
   const { net } = require('electron')
   const request = net.request({
@@ -128,7 +135,7 @@ function lookupRedtailContact(userKey, cliNumber, parsedNumber) {
     port: 443,
     path: '/api/public/v1/contacts/search?phone_number=' + parsedNumber 
   })
-  request.setHeader('Authorization', 'Userkeyauth ' + userKey)
+  request.setHeader('Authorization', 'Userkeyauth ' + redtailUserKey)
   request.setHeader('include', 'addresses,phones,emails,urls')
   request.setHeader('Content-Type', 'application/json')
 
@@ -140,7 +147,6 @@ function lookupRedtailContact(userKey, cliNumber, parsedNumber) {
       if (resp?.contacts?.length > 0) {
         resp.contacts[0].cli_number = cliNumber
         contactData = resp.contacts[0]
-        renderScreenPop()
       }
     })
   })

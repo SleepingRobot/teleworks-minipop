@@ -22,8 +22,8 @@
 </head>
 <body>
     <script>
-        window.electron.send('contact-data-request');
-        window.electron.receive('contact-data-reply', (contact) => {
+        window.electron.send('screenpop-request');
+        window.electron.receive('screenpop-reply', (contact) => {
             document.getElementById("zacNumber").innerHTML = contact?.cli_number || "<Missing>";
             document.getElementById("name").innerHTML = contact?.full_name || "<Missing>";
             document.getElementById("category").innerHTML = contact?.category || "<Missing>";
