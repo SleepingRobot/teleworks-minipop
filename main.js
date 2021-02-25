@@ -1,9 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const isDev = require('electron-is-dev');
 const keytar = require('keytar')
-let redtailUsername = ''
-let redtailPassword = ''
-let redtailApiKey = ''
+let redtailUser = ''
+let redtailLookupNumber = ''
 const gotTheLock = app.requestSingleInstanceLock()
 let screenPopWindow = null
 let contactData = {}
@@ -15,32 +14,80 @@ app.whenReady().then(() => {
       console.log('Running in production');
   }
 
-  // Check for supported CLI arguments
-  const redtailUsernameCli = app.commandLine.getSwitchValue("redtail-username")
-  const redtailPasswordCli = app.commandLine.getSwitchValue("redtail-password")
-  const redtailApiKeyCli = app.commandLine.getSwitchValue("redtail-apikey")
-  const redtailLookupNumberCli = app.commandLine.getSwitchValue("redtail-phone")
+  // If Redtail lookup number passed via CLI, store this value
+  redtailLookupNumber = app.commandLine.getSwitchValue("redtail-phone")
 
-  // If passed Redtail credential values, update in OS credential manager and
-  // refresh Redtail UserKey
-  if(redtailUsernameCli)
-    keytar.setPassword('zac-screen-pop', 'redtail-username', redtailUsernameCli);
-  if(redtailPasswordCli)
-    keytar.setPassword('zac-screen-pop', 'redtail-password', redtailPasswordCli);
-  if(redtailApiKeyCli)
-    keytar.setPassword('zac-screen-pop', 'redtail-apikey', redtailApiKeyCli);
-  if(redtailUsernameCli || redtailPasswordCli || redtailApiKeyCli)
-    updateRedtailUserKey()
+  // Ensure valid Redtail UserKey stored in OS User's keychain, prompt user if not
+  // Once validated, appropriate window will render depending on CLI args (or lack thereof)
+  validateRedtailUserKey()
+})
 
-  // If passed a Redtail phone number, parse it and
-  // query Redtail's API for matching contact to display in screen pop
-  if (redtailLookupNumberCli) {
-    const parsedNumber = parseNumber(redtailLookupNumberCli)
-    await keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
-      lookupRedtailContact(key, redtailLookupNumberCli, parsedNumber)
-    })
+ipcMain.on('contact-data-request', (event) => {
+  event.sender.send('contact-data-reply', contactData);
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
   }
 })
+
+function validateRedtailUserKey() {
+  await keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
+    // If key exists in OS User's keychain, test it against Redtail CRM API
+    if (key) {
+      // Prepare HTTP request to Redtail CRM API
+      const { net } = require('electron')
+      const request = net.request({
+        method: 'GET',
+        protocol: 'https:',
+        hostname: 'api2.redtailtechnology.com',
+        port: 443,
+        path: '/crm/v1/rest/authentication'
+      })
+      request.setHeader('Authorization', 'Userkeyauth ' + key)
+      request.setHeader('Content-Type', 'application/json')
+
+      // Process HTTP response from Redtail CRM API
+      request.on('response', (response) => {
+        if (response.statusCode == 200) {
+          // If valid, save user name and ID, then render window
+          response.on('data', (d) => {
+            const resp = JSON.parse(d)
+            const name = resp?.Name || '<Missing Name>'
+            const id = resp?.UserID || '<Missing ID>'
+            redtailUser = name + '(ID:' + id + ')'
+            renderWindow()
+          })
+        } else if(response.statusCode == 401) {
+          promptForRedtailCreds('Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR 401). Please re-enter credentials to try again.')
+        } else {
+          promptForRedtailCreds('Error validating stored Redtail authentication with Redtail API (HTTP ERR' + response.statusCode.toString() + '). Please re-enter credentials to try again.')
+        }
+      })
+      request.end()
+    } else {
+      promptForRedtailCreds('Redtail authentication required.')
+    }
+  })
+}
+
+function renderWindow() {
+  if(!redtailUser){
+    // Redtail user must be validated before proceeding
+    validateRedtailUserKey()
+  } else if (redtailLookupNumber ) {
+    // ... otherwise, if passed a Redtail phone number, parse it and
+    // query Redtail's API for matching contact to display in screen pop
+    const parsedNumber = parseNumber(redtailLookupNumber)
+    await keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
+      lookupRedtailContact(key, redtailLookupNumber, parsedNumber)
+    })
+  } else {
+    // ... otherwise, if valid account but no valid parameter passed, display Info window
+    renderInfoWindow()
+  }
+}
 
 function parseNumber (n) {
   if (n.startsWith("+1")){
@@ -49,72 +96,26 @@ function parseNumber (n) {
   return n.replace(/\D/g,'')
 }
 
-function updateRedtailUserKey() {
-  keytar.deletePassword('zac-screen-pop', 'redtail-userkey')
+function renderInfoWindow() {
 
-  await keytar.getPassword('zac-screen-pop', 'redtail-username').then((v) => {
-    redtailUsername = v
-  })
-  await keytar.getPassword('zac-screen-pop', 'redtail-password').then((v) => {
-    redtailPassword = v
-  })
-  await keytar.getPassword('zac-screen-pop', 'redtail-apikey').then((v) => {
-    redtailApiKey = v
-  })
+}
 
-  // If username, password, or API Key are missing, prompt user for input and
-  // recursively call this function to ensure new inputs are valid
-  if(!redtailUsername || !redtailPassword || !redtailApiKey) {
-    promptForRedtailCreds(redtailUsername, redtailPassword, redtailApiKey)
-    updateRedtailUserKey()
-  } else {
-    // Otherwise, encode values as Redtail Basic auth and use to acquire UserKey
-    const unencodedAuth = redtailApiKey + ":" + redtailUsername + ":" + redtailPassword
-    const redtailBasicAuth = new Buffer(unencodedAuth).toString('base64')
-    const resp = getRedtailUserKey(redtailBasicAuth)
-    if(resp && !resp.startsWith('ERROR: ')) {
-      keytar.setPassword('zac-screen-pop', 'redtail-userkey', resp);
-    } else if(resp.startsWith('ERROR: ')) {
-      // TODO: display provided error and re-prompt user for input
-    } else {
-      // TODO: display generic error and re-prompt user for input
+function renderScreenPop() {
+  const win = new BrowserWindow({
+    width: 300,
+    height: 200,
+    webPreferences: {
+      allowRunningInsecureContent: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: `${__dirname}/preload.js`
     }
-
-  }
-}
-
-function getRedtailUserKey(basicAuth) {
-  // Prepare HTTP request to Redtail CRM API
-  const { net } = require('electron')
-  const request = net.request({
-    method: 'GET',
-    protocol: 'https:',
-    hostname: 'smf.crm3.redtailtechnology.com',
-    port: 443,
-    path: '/api/public/v1/authentication'
   })
-  request.setHeader('Authorization', 'Basic ' + basicAuth)
-  request.setHeader('Content-Type', "application/json")
-
-  // Process HTTP response from Redtail CRM API
-  request.on('response', (response) => {
-    //console.log(`STATUS: ${response.statusCode}`)
-    response.on('data', (d) => {
-      const resp = JSON.parse(d)
-      if (resp?.UserKey) {
-        return resp.UserKey
-      } else {
-        // TODO: improve returned error message / status
-        return `ERROR: ${response.statusCode}`
-      }
-    })
-  })
-  request.end()
-}
-
-function promptForRedtailCreds(username, password, apiKey){
-  // TODO: implement user input modal
-  console.log("PROMPTING USER")
+  win.removeMenu()
+  win.loadFile('index.html')
+  //win.webContents.openDevTools()
 }
 
 function lookupRedtailContact(userKey, cliNumber, parsedNumber) {
@@ -146,30 +147,36 @@ function lookupRedtailContact(userKey, cliNumber, parsedNumber) {
   request.end()
 }
 
-function renderScreenPop() {
-  const win = new BrowserWindow({
-    width: 300,
-    height: 200,
-    webPreferences: {
-      allowRunningInsecureContent: false,
-      contextIsolation: true,
-      enableRemoteModule: false,
-      nodeIntegration: false,
-      sandbox: true,
-      preload: `${__dirname}/preload.js`
-    }
-  })
-  win.removeMenu()
-  win.loadFile('index.html')
-  //win.webContents.openDevTools()
+function promptForRedtailCreds(username, password, apiKey){
+  // TODO: implement user input modal
+  console.log("PROMPTING USER")
 }
 
-ipcMain.on('contact-data-request', (event) => {
-  event.sender.send('contact-data-reply', contactData);
-});
+function getRedtailUserKey(basicAuth) {
+  // Prepare HTTP request to Redtail CRM API
+  const { net } = require('electron')
+  const request = net.request({
+    method: 'GET',
+    protocol: 'https:',
+    hostname: 'smf.crm3.redtailtechnology.com',
+    port: 443,
+    path: '/api/public/v1/authentication'
+  })
+  request.setHeader('Authorization', 'Basic ' + basicAuth)
+  request.setHeader('Content-Type', "application/json")
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+  // Process HTTP response from Redtail CRM API
+  request.on('response', (response) => {
+    //console.log(`STATUS: ${response.statusCode}`)
+    response.on('data', (d) => {
+      const resp = JSON.parse(d)
+      if (resp?.UserKey) {
+        return resp.UserKey
+      } else {
+        // TODO: improve returned error message / status
+        return `ERROR: ${response.statusCode}`
+      }
+    })
+  })
+  request.end()
+}
