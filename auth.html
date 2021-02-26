@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Redtail Auth Input</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <style>
+        body {
+            background-color: linen;
+        }
+        
+        h1 {
+            font-size: medium;
+            font-weight: bold;
+        }
+
+        span {
+            font-size: medium;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        window.electron.send('redtail-auth-message-request');
+        window.electron.receive('redtail-auth-message-reply', (message) => {
+            document.getElementById('redtailAccount').innerHTML = message || 'Enter Redtail Account Credentials.';
+        });
+        function sendForm(event) {
+            event.preventDefault() // stop the form from submitting
+            let redtailAuthInput = {
+                username: document.getElementById("username").value,
+                password: document.getElementById("password").value,
+                apikey: document.getElementById("apikey").value
+            }
+            window.electron.send('redtail-auth-submission', redtailAuthInput);
+        }
+    </script>
+
+    <h1 id='message'></h1>
+    <form name="redtailAuthForm" onSubmit="JavaScript:sendForm(event)">
+        Redtail Username:
+        <br>
+        <input type="text" name="username" id="firstname">
+        <br>
+        Redtail Password:
+        <br>
+        <input type="text" name="password" id="password">
+        <br>
+        Redtail API Key:
+        <br>
+        <input type="text" name="apikey" id="apikey">
+        <br>
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>

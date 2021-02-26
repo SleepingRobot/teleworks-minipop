@@ -4,6 +4,7 @@ const keytar = require('keytar')
 let redtailUserKey = ''
 let redtailUser = ''
 let redtailLookupNumber = ''
+let redtailAuthMessage = ''
 const gotTheLock = app.requestSingleInstanceLock()
 let screenPopWindow = null
 let contactData = {}
@@ -23,12 +24,23 @@ app.whenReady().then(() => {
   validateRedtailUserKey()
 })
 
-ipcMain.on('screenpop-request', (event) => {
-  event.sender.send('screenpop-reply', contactData);
-})
-
 ipcMain.on('info-request', (event) => {
   event.sender.send('info-reply', redtailUser)
+})
+
+ipcMain.on('screenpop-request', (event) => {
+  event.sender.send('screenpop-reply', contactData);
+  contactData = ''
+})
+
+ipcMain.on('redtail-auth-message-request', (event) => {
+  event.sender.send('redtail-auth-message-reply', redtailAuthMessage);
+  redtailAuthMessage = ''
+})
+
+ipcMain.on('redtail-auth-submission', (event) => {
+  console.log("AUTH SUBMITTED")
+  console.log(event)
 })
 
 app.on('window-all-closed', () => {
@@ -66,14 +78,17 @@ function validateRedtailUserKey() {
             renderWindow()
           })
         } else if(response.statusCode == 401) {
-          promptForRedtailCreds('Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR 401). Please re-enter credentials to try again.')
+          redtailAuthMessage = 'Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR 401). Please re-enter credentials to try again.'
+          renderAuthInput()
         } else {
-          promptForRedtailCreds('Error validating stored Redtail authentication with Redtail API (HTTP ERR' + response.statusCode.toString() + '). Please re-enter credentials to try again.')
+          redtailAuthMessage = 'Error validating stored Redtail authentication with Redtail API (HTTP ERR' + response.statusCode.toString() + '). Please re-enter credentials to try again.'
+          renderAuthInput()
         }
       })
       request.end()
     } else {
-      promptForRedtailCreds('Redtail authentication required.')
+      redtailAuthMessage = 'Redtail authentication required.'
+      renderAuthInput()
     }
   })
 }
@@ -122,6 +137,24 @@ function renderScreenPop() {
   //win.webContents.openDevTools()
 }
 
+function renderAuthInput(message){
+  const win = new BrowserWindow({
+    width: 300,
+    height: 200,
+    webPreferences: {
+      allowRunningInsecureContent: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: `${__dirname}/preload.js`
+    }
+  })
+  win.removeMenu()
+  win.loadFile('auth.html')
+  //win.webContents.openDevTools()
+}
+
 function lookupRedtailContact(cliNumber) {
   // Parse number to format compatible with Redtail API
   const parsedNumber = parseNumber(redtailLookupNumber)
@@ -151,11 +184,6 @@ function lookupRedtailContact(cliNumber) {
     })
   })
   request.end()
-}
-
-function promptForRedtailCreds(username, password, apiKey){
-  // TODO: implement user input modal
-  console.log("PROMPTING USER")
 }
 
 function getRedtailUserKey(basicAuth) {
