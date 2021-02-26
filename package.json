@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "test": "electron main.js --redtail-phone='+1-555-456-7890'",
-    "start": "electron main.js"
+    "start": "electron main.js",
+    "dist": "build"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,15 @@
   },
   "dependencies": {
     "dotenv": "^8.2.0",
+    "electron-builder": "^22.9.1",
     "electron-is-dev": "^1.2.0",
     "keytar": "^7.4.0"
+  },
+  "build": {
+    "appId": "com.electron.zac-screen-pop",
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.png"
+    }
   }
 }
