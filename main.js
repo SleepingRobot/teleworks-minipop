@@ -105,7 +105,7 @@ async function displayWindow() {
   } else if (redtailLookupNumber ) {
     // ... otherwise, if passed a Redtail phone number, query Redtail's API
     // for matching contact information, then display screen pop
-    lookupRedtailContact(redtailLookupNumber, () => {renderHTML(300, 150, 'screenpop.html')})
+    lookupRedtailContact(redtailLookupNumber, () => {renderHTML(300, 175, 'screenpop.html')})
   } else {
     // ... otherwise, if valid account but no valid parameter passed, display Info window
     renderInfoWindow()
@@ -113,10 +113,8 @@ async function displayWindow() {
 }
 
 function parseNumber (n) {
-  if (n.startsWith("+1")){
-    n = n.substring(2)
-  }
-  return n.replace(/\D/g,'')
+  // Removes leading +1 if present and all non-digit characters
+  return n.replace('+1','').replace(/\D/g,'')
 }
 
 function renderInfoWindow() {
@@ -166,7 +164,7 @@ async function lookupRedtailContact(cliNumber, callback) {
   // Process HTTP response from Redtail CRM API
   request.on('response', (response) => {
     response.on('data', (d) => {
-      const resp = JSON.parse(d)      
+      const resp = JSON.parse(d)
       if (resp?.contacts?.length > 0) {
         resp.contacts[0].cli_number = cliNumber
         contactData = resp.contacts[0]
