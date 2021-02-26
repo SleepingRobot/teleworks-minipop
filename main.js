@@ -118,8 +118,7 @@ function parseNumber (n) {
 }
 
 function renderInfoWindow() {
-  // TODO: render info window
-  console.log("RENDER INFO WINDOW")
+  render(400, 400, 'info.html')
 }
 
 function render(x, y, file) {
