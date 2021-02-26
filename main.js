@@ -1,13 +1,28 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const isDev = require('electron-is-dev');
 const keytar = require('keytar')
+const isPrimaryInstance = app.requestSingleInstanceLock()
+let mainWindow = null
 let redtailUserKey = ''
 let redtailUser = ''
 let redtailLookupNumber = ''
 let redtailAuthMessage = ''
-let mainWindow = null
-const gotTheLock = app.requestSingleInstanceLock()
 let contactData = {}
+
+if(isPrimaryInstance) {
+  // If this is the primary instance and a secondary instance is opened
+  // re-focus our primary window if it exists, and process the new CLI args
+  app.on('second-instance', (event, argv, workingDirectory) => {
+    if (mainWindow) {
+      parseCommandLineArgs(argv)
+      validateRedtailUserKey()
+      mainWindow.show()
+    }
+  })
+} else {
+  // ... otherwise, if this is the secondary instance, self-terminate
+  app.exit()
+}
 
 app.whenReady().then(() => {
   if (isDev) {
@@ -18,14 +33,35 @@ app.whenReady().then(() => {
 
   initWindow()
 
-  // If Redtail lookup number passed via CLI, store this value
-  redtailLookupNumber = app.commandLine.getSwitchValue("redtail-phone")
+  parseCommandLineArgs()
 
   // Ensure valid Redtail UserKey stored in OS User's keychain, prompt user if not
   // Once validated, appropriate window will render depending on CLI args (or lack thereof)
   //keytar.deletePassword('zac-screen-pop', 'redtail-userkey')
   validateRedtailUserKey()
 })
+
+
+// If passed an argument array from secondary instance, process arguments from it
+// otherwise, if primary instance, process arguments from app.commandLine
+function parseCommandLineArgs(argv = null){
+  
+  if(argv){
+    redtailLookupNumber = getCommandLineValue(argv, 'redtail-phone')
+  } else {
+    redtailLookupNumber = app.commandLine.getSwitchValue('redtail-phone')
+  }
+  
+}
+
+function getCommandLineValue(argv, name) {
+  let arg = argv.find(a => a.toLowerCase().startsWith('--' + name + '='))
+  if(arg) {
+    return arg.split('=')[1]
+  } else {
+    return ''
+  }
+}
 
 ipcMain.on('info-request', (event) => {
   event.sender.send('info-reply', redtailUser)
@@ -98,7 +134,7 @@ function validateRedtailUserKey() {
   })
 }
 
-async function displayWindow() {
+function displayWindow() {
   if(!redtailUser || !redtailUserKey){
     // Redtail user must be validated before proceeding
     validateRedtailUserKey()
@@ -144,7 +180,7 @@ function renderHTML(width, height, file) {
   //mainWindow.webContents.openDevTools()
 }
 
-async function lookupRedtailContact(cliNumber, callback) {
+function lookupRedtailContact(cliNumber, callback) {
   // Parse number to format compatible with Redtail API
   const parsedNumber = parseNumber(redtailLookupNumber)
 
