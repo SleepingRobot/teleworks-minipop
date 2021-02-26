@@ -94,15 +94,14 @@ function validateRedtailUserKey() {
   })
 }
 
-function renderWindow() {
+async function renderWindow() {
   if(!redtailUser || !redtailUserKey){
     // Redtail user must be validated before proceeding
     validateRedtailUserKey()
   } else if (redtailLookupNumber ) {
     // ... otherwise, if passed a Redtail phone number, query Redtail's API
-    // for matching contact information, then display screen pop    
-    lookupRedtailContact(redtailLookupNumber)
-    renderScreenPop()
+    // for matching contact information, then display screen pop
+    lookupRedtailContact(redtailLookupNumber, renderScreenPop)
   } else {
     // ... otherwise, if valid account but no valid parameter passed, display Info window
     renderInfoWindow()
@@ -157,7 +156,7 @@ function renderAuthInput(message){
   //win.webContents.openDevTools()
 }
 
-function lookupRedtailContact(cliNumber) {
+async function lookupRedtailContact(cliNumber, callback) {
   // Parse number to format compatible with Redtail API
   const parsedNumber = parseNumber(redtailLookupNumber)
 
@@ -177,10 +176,11 @@ function lookupRedtailContact(cliNumber) {
   // Process HTTP response from Redtail CRM API
   request.on('response', (response) => {
     response.on('data', (d) => {
-      const resp = JSON.parse(d)
+      const resp = JSON.parse(d)      
       if (resp?.contacts?.length > 0) {
         resp.contacts[0].cli_number = cliNumber
         contactData = resp.contacts[0]
+        callback()
       }
     })
   })
