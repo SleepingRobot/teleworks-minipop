@@ -6,7 +6,6 @@ let redtailUser = ''
 let redtailLookupNumber = ''
 let redtailAuthMessage = ''
 const gotTheLock = app.requestSingleInstanceLock()
-let win = null
 let contactData = {}
 
 app.whenReady().then(() => {
@@ -40,8 +39,10 @@ ipcMain.on('redtail-auth-message-request', (event) => {
 })
 
 ipcMain.on('redtail-auth-submission', (event, input) => {
-  event.sender.getOwnerBrowserWindow().close()
+  redtailUser = ''
+  redtailUserKey = ''
   getRedtailUserKey(input.apiKey, input.username, input.password)
+  event.sender.getOwnerBrowserWindow().close()
 })
 
 // app.on('window-all-closed', () => {
@@ -49,6 +50,7 @@ ipcMain.on('redtail-auth-submission', (event, input) => {
 //     app.quit()
 //   }
 // })
+app.on('window-all-closed', e => e.preventDefault() )
 
 function validateRedtailUserKey() {
   keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
@@ -76,32 +78,32 @@ function validateRedtailUserKey() {
             const name = resp?.Name || '<Missing Name>'
             const id = resp?.UserID || '<Missing ID>'
             redtailUser = name + '(ID:' + id + ')'
-            renderWindow()
+            displayWindow()
           })
         } else if(response.statusCode == 401) {
           redtailAuthMessage = 'Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR 401). Please re-enter credentials to try again.'
-          renderAuthInput()
+          render(400, 300, 'auth.html')
         } else {
           redtailAuthMessage = 'Error validating stored Redtail authentication with Redtail API (HTTP ERR' + response.statusCode.toString() + '). Please re-enter credentials to try again.'
-          renderAuthInput()
+          render(400, 300, 'auth.html')
         }
       })
       request.end()
     } else {
       redtailAuthMessage = 'Redtail authentication required.'
-      renderAuthInput()
+      render(400, 300, 'auth.html')
     }
   })
 }
 
-async function renderWindow() {
+async function displayWindow() {
   if(!redtailUser || !redtailUserKey){
     // Redtail user must be validated before proceeding
     validateRedtailUserKey()
   } else if (redtailLookupNumber ) {
     // ... otherwise, if passed a Redtail phone number, query Redtail's API
     // for matching contact information, then display screen pop
-    lookupRedtailContact(redtailLookupNumber, renderScreenPop)
+    lookupRedtailContact(redtailLookupNumber, () => {render(300, 150, 'screenpop.html')})
   } else {
     // ... otherwise, if valid account but no valid parameter passed, display Info window
     renderInfoWindow()
@@ -120,10 +122,10 @@ function renderInfoWindow() {
   console.log("RENDER INFO WINDOW")
 }
 
-function renderScreenPop() {
-  win = new BrowserWindow({
-    width: 300,
-    height: 200,
+function render(x, y, file) {
+  const win = new BrowserWindow({
+    width: x,
+    height: y,
     webPreferences: {
       allowRunningInsecureContent: false,
       contextIsolation: true,
@@ -134,25 +136,7 @@ function renderScreenPop() {
     }
   })
   win.removeMenu()
-  win.loadFile('screenpop.html')
-  //win.webContents.openDevTools()
-}
-
-function renderAuthInput(message){
-  win = new BrowserWindow({
-    width: 400,
-    height: 300,
-    webPreferences: {
-      allowRunningInsecureContent: false,
-      contextIsolation: true,
-      enableRemoteModule: false,
-      nodeIntegration: false,
-      sandbox: true,
-      preload: `${__dirname}/preload.js`
-    }
-  })
-  win.removeMenu()
-  win.loadFile('auth.html')
+  win.loadFile(file)
   //win.webContents.openDevTools()
 }
 
@@ -212,13 +196,17 @@ function getRedtailUserKey(apiKey, username, password) {
           const unencodedKey = apiKey + ":" + userKey
           const encodedUserKey = Buffer.from(unencodedKey).toString('base64')
           // If response indicates success, store UserKey in OS User's keychain
-          keytar.setPassword('zac-screen-pop', 'redtail-userkey', encodedUserKey).then(
-            validateRedtailUserKey()
-          )
+          keytar.setPassword('zac-screen-pop', 'redtail-userkey', encodedUserKey)
+          // setPassword yields nothing, so we manually delay a couple seconds
+          // to give the OS time to store the secret before any code attempts to
+          // read it again
+          setTimeout(displayWindow, 2000);
         }
       })
+    } else {
+      redtailAuthMessage = 'Provided Redtail credentials rejected by Redtail API (HTTP ERR ' + response.statusCode.toString() + '). Please re-enter credentials to try again.'
+      render(400, 300, 'auth.html')
     }
   })
   request.end()
-  
 }
