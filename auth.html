@@ -31,7 +31,7 @@
             let redtailAuthInput = {
                 username: document.getElementById("username").value,
                 password: document.getElementById("password").value,
-                apikey: document.getElementById("apikey").value
+                apiKey: document.getElementById("apiKey").value
             }
             window.electron.send('redtail-auth-submission', redtailAuthInput);
         }
@@ -41,15 +41,15 @@
     <form name="redtailAuthForm" onSubmit="JavaScript:sendForm(event)">
         Redtail Username:
         <br>
-        <input type="text" name="username" id="username">
+        <input id="username" name="username" type="text">
         <br>
         Redtail Password:
         <br>
-        <input type="password" name="password" id="password">
+        <input id="password" name="password" type="password">
         <br>
         Redtail API Key:
         <br>
-        <input type="text" name="apikey" id="apikey">
+        <input id="apiKey" name="apiKey" type="text">
         <br>
         <br>
         <input type="submit" value="Submit">

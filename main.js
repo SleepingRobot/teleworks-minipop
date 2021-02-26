@@ -6,7 +6,7 @@ let redtailUser = ''
 let redtailLookupNumber = ''
 let redtailAuthMessage = ''
 const gotTheLock = app.requestSingleInstanceLock()
-let screenPopWindow = null
+let win = null
 let contactData = {}
 
 app.whenReady().then(() => {
@@ -21,6 +21,7 @@ app.whenReady().then(() => {
 
   // Ensure valid Redtail UserKey stored in OS User's keychain, prompt user if not
   // Once validated, appropriate window will render depending on CLI args (or lack thereof)
+  //keytar.deletePassword('zac-screen-pop', 'redtail-userkey')
   validateRedtailUserKey()
 })
 
@@ -38,18 +39,16 @@ ipcMain.on('redtail-auth-message-request', (event) => {
   redtailAuthMessage = ''
 })
 
-ipcMain.on('redtail-auth-submission', (event, redtailAuthInput) => {
-  console.log("AUTH SUBMITTED -- EVENT")
-  console.log(event)
-  console.log("AUTH SUBMITTED -- INPUT")
-  console.log(redtailAuthInput)
+ipcMain.on('redtail-auth-submission', (event, input) => {
+  event.sender.getOwnerBrowserWindow().close()
+  getRedtailUserKey(input.apiKey, input.username, input.password)
 })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+// app.on('window-all-closed', () => {
+//   if (process.platform !== 'darwin') {
+//     app.quit()
+//   }
+// })
 
 function validateRedtailUserKey() {
   keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
@@ -118,11 +117,12 @@ function parseNumber (n) {
 }
 
 function renderInfoWindow() {
-
+  // TODO: render info window
+  console.log("RENDER INFO WINDOW")
 }
 
 function renderScreenPop() {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 300,
     height: 200,
     webPreferences: {
@@ -140,7 +140,7 @@ function renderScreenPop() {
 }
 
 function renderAuthInput(message){
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 400,
     height: 300,
     webPreferences: {
@@ -154,7 +154,7 @@ function renderAuthInput(message){
   })
   win.removeMenu()
   win.loadFile('auth.html')
-  win.webContents.openDevTools()
+  //win.webContents.openDevTools()
 }
 
 function lookupRedtailContact(cliNumber) {
@@ -176,7 +176,6 @@ function lookupRedtailContact(cliNumber) {
 
   // Process HTTP response from Redtail CRM API
   request.on('response', (response) => {
-    //console.log(`STATUS: ${response.statusCode}`)
     response.on('data', (d) => {
       const resp = JSON.parse(d)
       if (resp?.contacts?.length > 0) {
@@ -188,7 +187,10 @@ function lookupRedtailContact(cliNumber) {
   request.end()
 }
 
-function getRedtailUserKey(basicAuth) {
+function getRedtailUserKey(apiKey, username, password) {
+  const unencodedAuth = apiKey + ":" + username + ":" + password
+  const basicAuth = Buffer.from(unencodedAuth).toString('base64')
+
   // Prepare HTTP request to Redtail CRM API
   const { net } = require('electron')
   const request = net.request({
@@ -203,16 +205,20 @@ function getRedtailUserKey(basicAuth) {
 
   // Process HTTP response from Redtail CRM API
   request.on('response', (response) => {
-    //console.log(`STATUS: ${response.statusCode}`)
-    response.on('data', (d) => {
-      const resp = JSON.parse(d)
-      if (resp?.UserKey) {
-        return resp.UserKey
-      } else {
-        // TODO: improve returned error message / status
-        return `ERROR: ${response.statusCode}`
-      }
-    })
+    if (response.statusCode == 200) {
+      response.on('data', (d) => {
+        const userKey = JSON.parse(d).authenticated_user?.user_key
+        if (userKey) {
+          const unencodedKey = apiKey + ":" + userKey
+          const encodedUserKey = Buffer.from(unencodedKey).toString('base64')
+          // If response indicates success, store UserKey in OS User's keychain
+          keytar.setPassword('zac-screen-pop', 'redtail-userkey', encodedUserKey).then(
+            validateRedtailUserKey()
+          )
+        }
+      })
+    }
   })
   request.end()
+  
 }
