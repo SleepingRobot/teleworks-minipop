@@ -5,6 +5,7 @@ let redtailUserKey = ''
 let redtailUser = ''
 let redtailLookupNumber = ''
 let redtailAuthMessage = ''
+let mainWindow = null
 const gotTheLock = app.requestSingleInstanceLock()
 let contactData = {}
 
@@ -14,6 +15,8 @@ app.whenReady().then(() => {
   } else {
       console.log('Running in production');
   }
+
+  initWindow()
 
   // If Redtail lookup number passed via CLI, store this value
   redtailLookupNumber = app.commandLine.getSwitchValue("redtail-phone")
@@ -42,15 +45,14 @@ ipcMain.on('redtail-auth-submission', (event, input) => {
   redtailUser = ''
   redtailUserKey = ''
   getRedtailUserKey(input.apiKey, input.username, input.password)
-  event.sender.getOwnerBrowserWindow().close()
+  //event.sender.getOwnerBrowserWindow().close()
 })
 
-// app.on('window-all-closed', () => {
-//   if (process.platform !== 'darwin') {
-//     app.quit()
-//   }
-// })
-app.on('window-all-closed', e => e.preventDefault() )
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
 
 function validateRedtailUserKey() {
   keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
@@ -82,16 +84,16 @@ function validateRedtailUserKey() {
           })
         } else if(response.statusCode == 401) {
           redtailAuthMessage = 'Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR 401). Please re-enter credentials to try again.'
-          render(400, 300, 'auth.html')
+          renderHTML(400, 300, 'auth.html')
         } else {
           redtailAuthMessage = 'Error validating stored Redtail authentication with Redtail API (HTTP ERR' + response.statusCode.toString() + '). Please re-enter credentials to try again.'
-          render(400, 300, 'auth.html')
+          renderHTML(400, 300, 'auth.html')
         }
       })
       request.end()
     } else {
       redtailAuthMessage = 'Redtail authentication required.'
-      render(400, 300, 'auth.html')
+      renderHTML(400, 300, 'auth.html')
     }
   })
 }
@@ -103,7 +105,7 @@ async function displayWindow() {
   } else if (redtailLookupNumber ) {
     // ... otherwise, if passed a Redtail phone number, query Redtail's API
     // for matching contact information, then display screen pop
-    lookupRedtailContact(redtailLookupNumber, () => {render(300, 150, 'screenpop.html')})
+    lookupRedtailContact(redtailLookupNumber, () => {renderHTML(300, 150, 'screenpop.html')})
   } else {
     // ... otherwise, if valid account but no valid parameter passed, display Info window
     renderInfoWindow()
@@ -118,13 +120,13 @@ function parseNumber (n) {
 }
 
 function renderInfoWindow() {
-  render(400, 400, 'info.html')
+  renderHTML(400, 400, 'info.html')
 }
 
-function render(x, y, file) {
-  const win = new BrowserWindow({
-    width: x,
-    height: y,
+function initWindow() {
+  mainWindow = new BrowserWindow({
+    width: 0,
+    height: 0,
     webPreferences: {
       allowRunningInsecureContent: false,
       contextIsolation: true,
@@ -134,9 +136,14 @@ function render(x, y, file) {
       preload: `${__dirname}/preload.js`
     }
   })
-  win.removeMenu()
-  win.loadFile(file)
-  //win.webContents.openDevTools()
+  mainWindow.removeMenu()
+}
+
+function renderHTML(width, height, file) {
+  mainWindow.setSize(width,height)
+  mainWindow.loadFile(file)
+  // Uncomment to force open Dev Tools after loading HTML file
+  //mainWindow.webContents.openDevTools()
 }
 
 async function lookupRedtailContact(cliNumber, callback) {
@@ -204,7 +211,7 @@ function getRedtailUserKey(apiKey, username, password) {
       })
     } else {
       redtailAuthMessage = 'Provided Redtail credentials rejected by Redtail API (HTTP ERR ' + response.statusCode.toString() + '). Please re-enter credentials to try again.'
-      render(400, 300, 'auth.html')
+      renderHTML(400, 300, 'auth.html')
     }
   })
   request.end()
