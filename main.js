@@ -38,9 +38,11 @@ ipcMain.on('redtail-auth-message-request', (event) => {
   redtailAuthMessage = ''
 })
 
-ipcMain.on('redtail-auth-submission', (event) => {
-  console.log("AUTH SUBMITTED")
+ipcMain.on('redtail-auth-submission', (event, redtailAuthInput) => {
+  console.log("AUTH SUBMITTED -- EVENT")
   console.log(event)
+  console.log("AUTH SUBMITTED -- INPUT")
+  console.log(redtailAuthInput)
 })
 
 app.on('window-all-closed', () => {
@@ -50,7 +52,7 @@ app.on('window-all-closed', () => {
 })
 
 function validateRedtailUserKey() {
-  await keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
+  keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
     // If key exists in OS User's keychain, test it against Redtail CRM API
     if (key) {
       // Prepare HTTP request to Redtail CRM API
@@ -139,8 +141,8 @@ function renderScreenPop() {
 
 function renderAuthInput(message){
   const win = new BrowserWindow({
-    width: 300,
-    height: 200,
+    width: 400,
+    height: 300,
     webPreferences: {
       allowRunningInsecureContent: false,
       contextIsolation: true,
@@ -152,7 +154,7 @@ function renderAuthInput(message){
   })
   win.removeMenu()
   win.loadFile('auth.html')
-  //win.webContents.openDevTools()
+  win.webContents.openDevTools()
 }
 
 function lookupRedtailContact(cliNumber) {

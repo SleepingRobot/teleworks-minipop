@@ -24,7 +24,7 @@
     <script>
         window.electron.send('redtail-auth-message-request');
         window.electron.receive('redtail-auth-message-reply', (message) => {
-            document.getElementById('redtailAccount').innerHTML = message || 'Enter Redtail Account Credentials.';
+            document.getElementById('message').innerHTML = message || 'Enter Redtail Account Credentials.';
         });
         function sendForm(event) {
             event.preventDefault() // stop the form from submitting
@@ -41,11 +41,11 @@
     <form name="redtailAuthForm" onSubmit="JavaScript:sendForm(event)">
         Redtail Username:
         <br>
-        <input type="text" name="username" id="firstname">
+        <input type="text" name="username" id="username">
         <br>
         Redtail Password:
         <br>
-        <input type="text" name="password" id="password">
+        <input type="password" name="password" id="password">
         <br>
         Redtail API Key:
         <br>
