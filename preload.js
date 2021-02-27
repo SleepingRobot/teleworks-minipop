@@ -4,13 +4,13 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     send: (channel, data) => {
-      const validChannels = ['info-request', 'screenpop-request', 'redtail-auth-message-request', 'redtail-auth-submission'];
+      const validChannels = ['redtail-auth-submission'];
       if (validChannels.includes(channel)) {
           ipcRenderer.send(channel, data);
       }
     },
     receive: (channel, func) => {
-      const validChannels = ['info-reply', 'screenpop-reply', 'redtail-auth-message-reply'];
+      const validChannels = ['screenpop-data', 'auth-data', 'history-data', 'settings-data'];
       if (validChannels.includes(channel)) {
           ipcRenderer.on(channel, (event, ...args) => func(...args));
       }

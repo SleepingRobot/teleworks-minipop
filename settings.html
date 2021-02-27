@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>ZAC Screen Pop</title>
+    <title>Teleworks ScreenPop</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <style>
         body {
@@ -22,7 +22,7 @@
 </head>
 <body>
     <script>
-        window.electron.send('info-request');
+        //window.electron.send('info-request');
         window.electron.receive('info-reply', (user) => {
             document.getElementById('redtailAccount').innerHTML = user || 'UNLINKED';
         });
