@@ -8,7 +8,7 @@ let screenpopWindow = null
 let historyWindow = null
 let settingsWindow = null
 let authWindow = null
-let openWindows = []
+let openWindows = ['screenpop']
 let contactData = []
 let redtailSettings = {
   auth: {
@@ -48,7 +48,7 @@ function initTrayIcon() {
   tray = new Tray(`${__dirname}/build/icon.png`)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show', type: 'normal', click() { restoreAppFromTray() } },
-    { label: 'Exit', type: 'normal', role: 'quit' }
+    { label: 'Exit', type: 'normal', click() { app.exit() } }
   ])
   tray.setToolTip('Teleworks Screenpop')
   tray.setContextMenu(contextMenu)
@@ -69,22 +69,22 @@ function initWindows() {
     e.preventDefault()
     closeAppToTray()
   }
-  screenpopWindow = new BrowserWindow({...windowOptions, width: 400, height: 200})
+  screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:200})
   screenpopWindow.removeMenu()
   screenpopWindow.loadFile('screenpop.html')
   screenpopWindow.on('close', closeToTray)
   //screenpopWindow.webContents.openDevTools()
-  historyWindow = new BrowserWindow({...windowOptions, width: 400, height: 1200, show: false, parent: screenpopWindow})
+  historyWindow = new BrowserWindow({...windowOptions, width:400, height:1200, show:false, parent:screenpopWindow})
   historyWindow.removeMenu()
   historyWindow.loadFile('history.html')
   historyWindow.hide()
   //historyWindow.webContents.openDevTools()
-  settingsWindow = new BrowserWindow({...windowOptions, width: 800, height: 800, show: false, parent: screenpopWindow})
+  settingsWindow = new BrowserWindow({...windowOptions, width:800, height:800, show:false, parent:screenpopWindow})
   settingsWindow.removeMenu()
   settingsWindow.loadFile('settings.html')
   settingsWindow.hide()
   //settingsWindow.webContents.openDevTools()
-  authWindow = new BrowserWindow({...windowOptions, width: 400, height: 250, show: false, parent: screenpopWindow, modal: true})
+  authWindow = new BrowserWindow({...windowOptions, width:400, height:250, show:false, parent:screenpopWindow, frame:true})
   authWindow.removeMenu()
   authWindow.loadFile('auth.html')
   authWindow.on('close', closeToTray)
@@ -99,7 +99,7 @@ function closeAppToTray() {
 }
 
 function restoreAppFromTray() {
-  screenpopWindow.show()
+  if(openWindows.includes('screenpop')) screenpopWindow.show()
   if(openWindows.includes('auth')) authWindow.show()
   if(openWindows.includes('history')) historyWindow.show()
   if(openWindows.includes('settings')) settingsWindow.show()
@@ -160,15 +160,12 @@ function lookupRedtailContact(cliNumber) {
   // Process HTTP response from Redtail CRM API
   // TODO: add error handling
   request.on('response', (response) => {
-    console.log(`response: ${response}`)
     response.on('data', (d) => {
       const resp = JSON.parse(d)
       // TODO: handle multiple matches. i.e., contactData[c:[{},{}], c:[{}], c:[{},{},{}], etc]
       if (resp?.contacts?.length > 0) {
         resp.contacts[0].cli_number = cliNumber
         resp.contacts[0].call_received = Date.now()
-        console.log("pushing...")
-        console.log(resp.contacts[0])
         pushContactData(resp.contacts[0])
       }
     })
@@ -212,15 +209,21 @@ function openAuthModal(crm, cliNumber, message = null) {
     })
     authWindow.once('ready-to-show', () => {
       authWindow.show()
-      if(!openWindows.includes('auth')){
-        openWindows.push('auth')
-      }
+      if(!openWindows.includes('auth')) openWindows.push('auth')
+      screenpopWindow.hide()
+      openWindows = openWindows.filter(e => e !== 'screenpop')
     })
   }
 }
 
 ipcMain.on('auth-submission', (event, authData) => {
-  // Clear old auth settings, then validate new auth credentials
+  // When auth input is submitted, close auth window and re-display screenpop
+  screenpopWindow.show()
+  if(!openWindows.includes('screenpop')) openWindows.push('screenpop')
+  authWindow.hide()
+  openWindows = openWindows.filter(e => e !== 'auth')
+
+  // Then clear old auth settings, and validate new auth credentials
   if (authData?.crm === 'Redtail') {
     redtailSettings.auth.valid = false
     redtailSettings.auth.name = ''
