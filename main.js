@@ -1,12 +1,14 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron')
 const isDev = require('electron-is-dev');
 const keytar = require('keytar')
 const isPrimaryInstance = app.requestSingleInstanceLock()
 const keytarService = 'teleworks-screenpop'
+let tray = null
 let screenpopWindow = null
 let historyWindow = null
 let settingsWindow = null
 let authWindow = null
+let openWindows = []
 let contactData = []
 let redtailSettings = {
   auth: {
@@ -37,9 +39,20 @@ app.whenReady().then(() => {
   } else {
       console.log('Running in production');
   }
+  initTrayIcon()
   initWindows()
   parseCommandLineArgs()
 })
+
+function initTrayIcon() {
+  tray = new Tray(`${__dirname}/build/icon.png`)
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show', type: 'normal', click() { restoreAppFromTray() } },
+    { label: 'Exit', type: 'normal', role: 'quit' }
+  ])
+  tray.setToolTip('Teleworks Screenpop')
+  tray.setContextMenu(contextMenu)
+}
 
 function initWindows() {
   const windowOptions = {
@@ -52,9 +65,14 @@ function initWindows() {
       preload: `${__dirname}/preload.js`
     }
   }
+  const closeToTray = (e) => {
+    e.preventDefault()
+    closeAppToTray()
+  }
   screenpopWindow = new BrowserWindow({...windowOptions, width: 400, height: 200})
   screenpopWindow.removeMenu()
   screenpopWindow.loadFile('screenpop.html')
+  screenpopWindow.on('close', closeToTray)
   //screenpopWindow.webContents.openDevTools()
   historyWindow = new BrowserWindow({...windowOptions, width: 400, height: 1200, show: false, parent: screenpopWindow})
   historyWindow.removeMenu()
@@ -66,10 +84,25 @@ function initWindows() {
   settingsWindow.loadFile('settings.html')
   settingsWindow.hide()
   //settingsWindow.webContents.openDevTools()
-  authWindow = new BrowserWindow({...windowOptions, width: 400, height: 200, show: false, parent: screenpopWindow, modal: true})
+  authWindow = new BrowserWindow({...windowOptions, width: 400, height: 250, show: false, parent: screenpopWindow, modal: true})
   authWindow.removeMenu()
   authWindow.loadFile('auth.html')
+  authWindow.on('close', closeToTray)
   //authWindow.webContents.openDevTools()
+}
+
+function closeAppToTray() {
+  screenpopWindow.hide()
+  authWindow.hide()
+  historyWindow.hide()
+  settingsWindow.hide()
+}
+
+function restoreAppFromTray() {
+  screenpopWindow.show()
+  if(openWindows.includes('auth')) authWindow.show()
+  if(openWindows.includes('history')) historyWindow.show()
+  if(openWindows.includes('settings')) settingsWindow.show()
 }
 
 
@@ -104,7 +137,7 @@ function getCommandLineValue(argv, name) {
 function lookupRedtailContact(cliNumber) {
   // If missing valid Redtail auth, display credential input modal
   if(!redtailSettings.auth.valid) {
-    openAuthModal('Redtail', cliNumber)
+    openAuthModal('Redtail', cliNumber, 'Enter Redtail credentials to lookup contact.')
     return
   }
 
@@ -179,6 +212,9 @@ function openAuthModal(crm, cliNumber, message = null) {
     })
     authWindow.once('ready-to-show', () => {
       authWindow.show()
+      if(!openWindows.includes('auth')){
+        openWindows.push('auth')
+      }
     })
   }
 }
