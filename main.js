@@ -1,4 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron')
+const fs = require('fs');
+const crypto = require('crypto');
+const path = require ('path');
 const isDev = require('electron-is-dev');
 const keytar = require('keytar')
 const isPrimaryInstance = app.requestSingleInstanceLock()
@@ -39,8 +42,10 @@ app.whenReady().then(() => {
   } else {
       console.log('Running in production');
   }
+  
   initTrayIcon()
   initWindows()
+  loadContactData()
   parseCommandLineArgs()
 })
 
@@ -103,6 +108,59 @@ function restoreAppFromTray() {
   if(openWindows.includes('auth')) authWindow.show()
   if(openWindows.includes('history')) historyWindow.show()
   if(openWindows.includes('settings')) settingsWindow.show()
+}
+
+// Return existing Key and IV if present in OS User's keychain, otherwise generate, store, and return new ones
+async function getEncryptionSecrets() {
+  k = await keytar.getPassword(keytarService, 'encryption-key')
+  i = await keytar.getPassword(keytarService, 'encryption-iv')
+  if(k && i) {
+    k = Buffer.from(k, 'hex')
+    i = Buffer.from(i, 'hex')
+    return {key: k, iv: i}
+  } else {
+    let newKey = crypto.randomBytes(32)
+    let newIv = crypto.randomBytes(16)
+    keytar.setPassword(keytarService, 'encryption-key', newKey.toString('hex'))
+    keytar.setPassword(keytarService, 'encryption-iv', newIv.toString('hex'))
+    return {key: newKey, iv: newIv}
+  }
+}
+
+// Reads contactData from encrypted file on disk, if present
+// TODO: Add better error handling
+async function loadContactData() {
+  const historyFile = path.resolve('./screenpop.history')
+  const secrets = await getEncryptionSecrets()
+  const decipher = crypto.createDecipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
+  fs.readFile(historyFile, (err, input) => {
+    if (err) {
+      console.log("Error reading contactData from disk: ")
+      console.log(err)
+    } else {
+      const output = Buffer.concat([cipher.update(input), cipher()])
+      if(output){
+        contactData = output
+        console.log("contact data from disk:")
+        console.log(output)
+      }
+    }
+  })
+}
+
+// Saves contactData to encrypted file on disk
+// TODO: Add better error handling
+function saveContactData() {
+  const historyFile = path.resolve('./screenpop.history')
+  const secrets = getEncryptionSecrets()
+  const cipher = crypto.createCipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
+  const output = Buffer.concat([cipher.update(contactData), cipher.final()])
+  fs.writeFile(historyFile, output, (err) => {
+    if (err) {
+      console.log("Error writing contactData to disk: ")
+      console.log(err)
+    }
+  });
 }
 
 
