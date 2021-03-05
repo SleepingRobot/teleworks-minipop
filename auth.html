@@ -26,18 +26,17 @@
         let authData = {}
         window.electron.receive('auth-data', (data) => {
             authData = data
-            document.getElementById('message').innerHTML = authData?.message || 'Enter Redtail Account Credentials.';
         });
         function sendForm(event) {
             event.preventDefault() // stop the form from submitting
-            let redtailAuthInput = {
+            let authSubmission = {
                 crm: authData?.crm,
                 cliNumber: authData?.cliNumber,
                 username: document.getElementById("username").value,
                 password: document.getElementById("password").value,
                 apiKey: document.getElementById("apiKey").value
             }
-            window.electron.send('redtail-auth-submission', redtailAuthInput);
+            window.electron.send('auth-submission', authSubmission);
         }
     </script>
 

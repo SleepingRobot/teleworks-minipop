@@ -15,9 +15,9 @@ let openWindows = ['screenpop']
 let contactData = []
 let redtailSettings = {
   auth: {
-    valid: false,
     name: '',
     id: '',
+    key: '',
   }
 }
 
@@ -36,7 +36,7 @@ if(isPrimaryInstance) {
 }
 
 // When ready, render ScreenPop window and process any CLI args
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (isDev) {
       console.log('Running in development');
   } else {
@@ -45,6 +45,8 @@ app.whenReady().then(() => {
   
   initTrayIcon()
   initWindows()
+  //await clearAuth('Redtail')
+  await checkKeychainForAuth()
   loadContactData()
   parseCommandLineArgs()
 })
@@ -193,14 +195,14 @@ function getCommandLineValue(argv, name) {
 }
 
 function lookupRedtailContact(cliNumber) {
-  // If missing valid Redtail auth, display credential input modal
-  if(!redtailSettings.auth.valid) {
+  // If missing Redtail auth key, display credential input modal
+  if(!redtailSettings.auth.key) {
     openAuthModal('Redtail', cliNumber, 'Enter Redtail credentials to lookup contact.')
     return
   }
 
   // Parse number to format compatible with Redtail API
-  const parsedNumber = parseNumber(redtailLookupNumber)
+  const parsedNumber = parseNumber(cliNumber)
 
   // Prepare HTTP request to Redtail CRM API
   const { net } = require('electron')
@@ -211,7 +213,7 @@ function lookupRedtailContact(cliNumber) {
     port: 443,
     path: '/api/public/v1/contacts/search?phone_number=' + parsedNumber 
   })
-  request.setHeader('Authorization', 'Userkeyauth ' + redtailUserKey)
+  request.setHeader('Authorization', 'Userkeyauth ' + redtailSettings.auth.key)
   request.setHeader('include', 'addresses,phones,emails,urls')
   request.setHeader('Content-Type', 'application/json')
 
@@ -241,16 +243,12 @@ function pushContactData(c) {
   contactData.push(c)
   // TODO: securely write new contactData array to encrypted file
 
-  if(screenpopWindow){
-    screenpopWindow.webContents.on('did-finish-load', ()=>{
-      screenpopWindow.webContents.send('screenpop-data', c)
-    })
+  if(screenpopWindow && !screenpopWindow.webContents.isLoading()){
+    screenpopWindow.webContents.send('screenpop-data', c)
   }
 
-  if(historyWindow) {
-    historyWindow.webContents.on('did-finish-load', ()=>{
-      historyWindow.webContents.send('history-data', contactData)
-    })
+  if(historyWindow && !historyWindow.webContents.isLoading()) {
+    historyWindow.webContents.send('history-data', contactData)
   }
 }
 
@@ -274,27 +272,44 @@ function openAuthModal(crm, cliNumber, message = null) {
   }
 }
 
-ipcMain.on('auth-submission', (event, authData) => {
+ipcMain.on('auth-submission', async (event, authData) => {
   // When auth input is submitted, close auth window and re-display screenpop
   screenpopWindow.show()
   if(!openWindows.includes('screenpop')) openWindows.push('screenpop')
   authWindow.hide()
   openWindows = openWindows.filter(e => e !== 'auth')
 
-  // Then clear old auth settings, and validate new auth credentials
+  // Then clear old auth settings...
+  await clearAuth(authData.crm)
+
+  // ...and validate new auth credentials
   if (authData?.crm === 'Redtail') {
-    redtailSettings.auth.valid = false
-    redtailSettings.auth.name = ''
-    redtailSettings.auth.id = ''
-    keytar.deletePassword(keytarService, 'redtail-userkey').then(()=>{
-      authenticateRedtail(authData)
-    })
+    authenticateRedtail(authData)
   }
 })
 
-function authenticateRedtail(authData) {
-  const unencodedAuth = authData?.apiKey + ":" + authData?.username + ":" + authData?.password
-  const basicAuth = Buffer.from(unencodedAuth).toString('base64')
+async function clearAuth(crm) {
+  if (crm === 'Redtail') {
+    redtailSettings.auth.name = ''
+    redtailSettings.auth.id = ''
+    redtailSettings.auth.key = ''
+    await keytar.deletePassword(keytarService, 'redtail-username')
+    await keytar.deletePassword(keytarService, 'redtail-userid')
+    await keytar.deletePassword(keytarService, 'redtail-userkey')
+  }
+}
+
+// Since Redtail authentication endpoint only returns a user's name value when using Userkeyauth and not Basic auth...
+// if this function successfully auths via Basic it will then recursively re-call itself with returned
+// UserKey so that we can properly capture the user's name
+function authenticateRedtail(authData, UserkeyToken = '') {
+
+  // Prepare Basic auth header value if we were not passed a UserKey
+  let basicToken = ''
+  if(!UserkeyToken){
+    const unencodedAuth = authData?.apiKey + ":" + authData?.username + ":" + authData?.password
+    basicToken = Buffer.from(unencodedAuth).toString('base64')
+  }
 
   // Prepare HTTP request to Redtail CRM API
   // TODO: Update this to Redtail TWAPI API if they ever start returning full user details...
@@ -306,8 +321,14 @@ function authenticateRedtail(authData) {
     port: 443,
     path: '/crm/v1/rest/authentication'
   })
-  request.setHeader('Authorization', 'Basic ' + basicAuth)
   request.setHeader('Content-Type', 'application/json')
+  // Set appropriate auth header depending on whether we are using Basic or UserKey
+  if(!UserkeyToken) {
+    request.setHeader('Authorization', 'Basic ' + basicToken)
+  } else {
+    request.setHeader('Authorization', 'Userkeyauth ' + UserkeyToken)
+  }
+  
 
 
   // Process HTTP response from Redtail CRM API
@@ -315,20 +336,35 @@ function authenticateRedtail(authData) {
     if (response?.statusCode == 200) {
       response.on('data', (d) => {
         const resp = JSON.parse(d)
-        const userKey = JSON.parse(d).authenticated_user?.user_key
         if (resp?.APIKey && resp?.UserKey) {
-          // If response indicates success, update Redtail auth settings
-          redtailSettings.auth.valid = true
-          redtailSettings.auth.name = resp?.Name
-          redtailSettings.auth.id = resp?.UserID
-          // then store UserKey in OS User's keychain
+          // If response indicates success, encode returned API UserKey
           const unencodedKey = resp?.APIKey + ":" + resp?.UserKey
           const encodedUserKey = Buffer.from(unencodedKey).toString('base64')
-          keytar.setPassword(keytarService, 'redtail-userkey', encodedUserKey)
-          // finally, if we were authenticating to fulfill a CLI number lookup, we can now re-attempt the lookup
-          if(authData?.cliNumber){
-            // Note: keytar.setPassword yields nothing, so we manually delay a couple seconds to give the OS time to store the secret first
-            setTimeout(() => {lookupRedtailContact(authData.cliNumber)}, 2000)  
+
+          // If we authenticated with Basic auth, returned name value will be null
+          // so recursively re-call this function using returned UserKey
+          if(!UserkeyToken) {
+            authenticateRedtail(authData, encodedUserKey)
+          } else {
+            // otherwise, update auth settings in memory and store in OS User's keychain
+            if (resp?.Name) {
+              redtailSettings.auth.name = resp.Name
+              keytar.setPassword(keytarService, 'redtail-username', resp.Name)
+            }
+            if (resp?.UserID) {
+              redtailSettings.auth.id = resp.UserID.toString()
+              keytar.setPassword(keytarService, 'redtail-userid', resp.UserID.toString())
+            }
+            if (encodedUserKey) {
+              redtailSettings.auth.key = encodedUserKey
+              keytar.setPassword(keytarService, 'redtail-userkey', encodedUserKey)
+            }
+            // finally, if we were authenticating to fulfill a CLI number lookup, we can now re-attempt the lookup
+            if(authData?.cliNumber){
+              // Note: keytar.setPassword yields nothing, so we manually delay a couple seconds
+              //       to give the OS time to store the secret first just in case
+              setTimeout(() => {lookupRedtailContact(authData.cliNumber)}, 2000)  
+            }
           }
         }
       })
@@ -348,54 +384,10 @@ app.on('window-all-closed', () => {
   }
 })
 
-// function validateRedtailUserKey() {
-//   keytar.getPassword('zac-screen-pop', 'redtail-userkey').then((key) =>{
-//     // If key exists in OS User's keychain, test it against Redtail CRM API
-//     if (key) {
-//       // Prepare HTTP request to Redtail CRM API
-//       const { net } = require('electron')
-//       const request = net.request({
-//         method: 'GET',
-//         protocol: 'https:',
-//         hostname: 'api2.redtailtechnology.com',
-//         port: 443,
-//         path: '/crm/v1/rest/authentication'
-//       })
-//       request.setHeader('Authorization', 'Userkeyauth ' + key)
-//       request.setHeader('Content-Type', 'application/json')
-
-//       // Process HTTP response from Redtail CRM API
-//       request.on('response', (response) => {
-//         if (response.statusCode == 200) {
-//           // If valid, save user information, then render window
-
-//         } else if(response.statusCode == 401) {
-//           redtailAuthMessage = 'Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR 401). Please re-enter credentials to try again.'
-//           renderHTML(400, 300, 'auth.html')
-//         } else {
-//           redtailAuthMessage = 'Error validating stored Redtail authentication with Redtail API (HTTP ERR' + response.statusCode.toString() + '). Please re-enter credentials to try again.'
-//           renderHTML(400, 300, 'auth.html')
-//         }
-//       })
-//       request.end()
-//     } else {
-//       redtailAuthMessage = 'Redtail authentication required.'
-//       renderHTML(400, 300, 'auth.html')
-//     }
-//   })
-// }
-
-// function displayWindow() {
-//   if(!redtailUser || !redtailUserKey){
-//     // Redtail user must be validated before proceeding
-//     validateRedtailUserKey()
-//   } else if (redtailLookupNumber ) {
-//     // ... otherwise, if passed a Redtail phone number, query Redtail's API
-//     // for matching contact information, then display screen pop
-//     lookupRedtailContact(redtailLookupNumber, () => {renderHTML(300, 175, 'screenpop.html')})
-//   } else {
-//     // ... otherwise, if valid account but no valid parameter passed, display Info window
-//     renderInfoWindow()
-//   }
-// }
+// If any CRM auth settings have been stored in OS User's Keychain, load them into memory
+async function checkKeychainForAuth() {
+  redtailSettings.auth.name = await keytar.getPassword(keytarService, 'redtail-username')
+  redtailSettings.auth.id = await keytar.getPassword(keytarService, 'redtail-userid')
+  redtailSettings.auth.key = await keytar.getPassword(keytarService, 'redtail-userkey')
+}
 

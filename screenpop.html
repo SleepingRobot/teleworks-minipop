@@ -22,7 +22,7 @@
 </head>
 <body>
     <script>
-        window.electron.receive('screenpop-reply', (contact) => {
+        window.electron.receive('screenpop-data', (contact) => {
             document.getElementById("zacNumber").innerHTML = contact?.cli_number || "<Missing>";
             document.getElementById("name").innerHTML = contact?.full_name || "<Missing>";
             document.getElementById("category").innerHTML = contact?.category || "<Missing>";

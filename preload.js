@@ -4,7 +4,7 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     send: (channel, data) => {
-      const validChannels = ['redtail-auth-submission'];
+      const validChannels = ['auth-submission'];
       if (validChannels.includes(channel)) {
           ipcRenderer.send(channel, data);
       }
