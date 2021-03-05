@@ -12,7 +12,7 @@ let historyWindow = null
 let settingsWindow = null
 let authWindow = null
 let openWindows = ['screenpop']
-let contactData = []
+let lookups = []
 let redtailSettings = {
   auth: {
     name: '',
@@ -47,7 +47,7 @@ app.whenReady().then(async () => {
   initWindows()
   //await clearAuth('Redtail')
   await checkKeychainForAuth()
-  loadContactData()
+  loadLookupHistory()
   parseCommandLineArgs()
 })
 
@@ -129,37 +129,35 @@ async function getEncryptionSecrets() {
   }
 }
 
-// Reads contactData from encrypted file on disk, if present
+// Reads lookup history from encrypted file on disk, if present
 // TODO: Add better error handling
-async function loadContactData() {
+async function loadLookupHistory() {
   const historyFile = path.resolve('./screenpop.history')
   const secrets = await getEncryptionSecrets()
   const decipher = crypto.createDecipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
   fs.readFile(historyFile, (err, input) => {
     if (err) {
-      console.log("Error reading contactData from disk: ")
+      console.log("Error reading lookup history from disk: ")
       console.log(err)
     } else {
       const output = Buffer.concat([cipher.update(input), cipher()])
       if(output){
-        contactData = output
-        console.log("contact data from disk:")
-        console.log(output)
+        lookups = output
       }
     }
   })
 }
 
-// Saves contactData to encrypted file on disk
+// Saves lookup history to encrypted file on disk
 // TODO: Add better error handling
-function saveContactData() {
+function saveLookupHistory() {
   const historyFile = path.resolve('./screenpop.history')
   const secrets = getEncryptionSecrets()
   const cipher = crypto.createCipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
-  const output = Buffer.concat([cipher.update(contactData), cipher.final()])
+  const output = Buffer.concat([cipher.update(lookups), cipher.final()])
   fs.writeFile(historyFile, output, (err) => {
     if (err) {
-      console.log("Error writing contactData to disk: ")
+      console.log("Error writing lookup history to disk: ")
       console.log(err)
     }
   });
@@ -226,7 +224,7 @@ function lookupRedtailContact(cliNumber) {
       if (resp?.contacts?.length > 0) {
         resp.contacts[0].cli_number = cliNumber
         resp.contacts[0].call_received = Date.now()
-        pushContactData(resp.contacts[0])
+        pushLookupResults(resp.contacts[0])
       }
     })
   })
@@ -238,9 +236,9 @@ function parseNumber (n) {
   return n.replace('+1','').replace(/\D/g,'')
 }
 
-// Add new contact lookup results to stack, update ScreenPop and CallHistory windows
-function pushContactData(c) {
-  contactData.push(c)
+// Add new lookup results to stack, update ScreenPop and CallHistory windows
+function pushLookupResults(c) {
+  lookups.push(c)
   // TODO: securely write new contactData array to encrypted file
 
   if(screenpopWindow && !screenpopWindow.webContents.isLoading()){
@@ -248,7 +246,7 @@ function pushContactData(c) {
   }
 
   if(historyWindow && !historyWindow.webContents.isLoading()) {
-    historyWindow.webContents.send('history-data', contactData)
+    historyWindow.webContents.send('history-data', lookups)
   }
 }
 
