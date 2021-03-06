@@ -22,11 +22,11 @@
 </head>
 <body>
     <script>
-        window.electron.receive('screenpop-data', (contact) => {
-            document.getElementById("zacNumber").innerHTML = contact?.cli_number || "<Missing>";
-            document.getElementById("name").innerHTML = contact?.full_name || "<Missing>";
-            document.getElementById("category").innerHTML = contact?.category || "<Missing>";
-            document.getElementById("status").innerHTML = contact?.status || "<Missing>";
+        window.electron.receive('screenpop-data', (lookup) => {
+            document.getElementById("zacNumber").innerHTML = lookup?.input || "<Missing>";
+            document.getElementById("name").innerHTML = lookup.results[0]?.full_name || "<Missing>";
+            document.getElementById("category").innerHTML = lookup.results[0]?.category || "<Missing>";
+            document.getElementById("status").innerHTML = lookup.results[0]?.status || "<Missing>";
         });
     </script>
     <h1>ZAC Number: <span id="zacNumber"></span></h1>

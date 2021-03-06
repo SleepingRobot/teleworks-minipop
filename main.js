@@ -24,10 +24,12 @@ let redtailSettings = {
 if(isPrimaryInstance) {
   // If this is the primary instance and a secondary instance is opened
   // re-focus our primary window if it exists, and process the new CLI args
-  app.on('second-instance', (event, argv, workingDirectory) => {
+  app.on('second-instance', async (event, argv, workingDirectory) => {
     if (screenpopWindow) {
-      parseCommandLineArgs(argv)
-      screenpopWindow.show()
+      await parseCommandLineArgs(argv)
+      if(!openWindows.includes('screenpop')) openWindows.push('screenpop')
+      showApp()
+      attemptPendingLookups()
     }
   })
 } else {
@@ -47,15 +49,15 @@ app.whenReady().then(async () => {
   initWindows()
   //await clearAuth('Redtail')
   await checkKeychainForAuth()
-  loadLookupHistory()
-  parseCommandLineArgs()
+  await loadLookupHistory()
+  await parseCommandLineArgs()
   attemptPendingLookups()
 })
 
 function initTrayIcon() {
   tray = new Tray(`${__dirname}/build/icon.png`)
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Show', type: 'normal', click() { restoreAppFromTray() } },
+    { label: 'Show', type: 'normal', click() { showApp() } },
     { label: 'Exit', type: 'normal', click() { app.exit() } }
   ])
   tray.setToolTip('Teleworks Screenpop')
@@ -75,7 +77,7 @@ function initWindows() {
   }
   const closeToTray = (e) => {
     e.preventDefault()
-    closeAppToTray()
+    hideApp()
   }
   screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:200})
   screenpopWindow.removeMenu()
@@ -99,14 +101,14 @@ function initWindows() {
   //authWindow.webContents.openDevTools()
 }
 
-function closeAppToTray() {
+function hideApp() {
   screenpopWindow.hide()
   authWindow.hide()
   historyWindow.hide()
   settingsWindow.hide()
 }
 
-function restoreAppFromTray() {
+function showApp() {
   if(openWindows.includes('screenpop')) screenpopWindow.show()
   if(openWindows.includes('auth')) authWindow.show()
   if(openWindows.includes('history')) historyWindow.show()
@@ -136,39 +138,37 @@ async function loadLookupHistory() {
   const historyFile = path.resolve('./screenpop.history')
   const secrets = await getEncryptionSecrets()
   const decipher = crypto.createDecipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
-  fs.readFile(historyFile, (err, input) => {
-    if (err) {
-      console.log("Error reading lookup history from disk: ")
-      console.log(err)
-    } else {
-      const output = Buffer.concat([cipher.update(input), cipher()])
-      if(output){
-        lookups = output
-      }
+  try {
+    const input = fs.readFileSync(historyFile)
+    const output = Buffer.concat([decipher.update(input), decipher.final()])
+    if(output){
+      lookups = JSON.parse(output)
     }
-  })
+  } catch (err) {
+    console.log("Error reading lookup history from disk: ")
+    console.log(err)
+  }
 }
 
 // Saves lookup history to encrypted file on disk
 // TODO: Add better error handling
-function saveLookupHistory() {
+async function saveLookupHistory() {
   const historyFile = path.resolve('./screenpop.history')
-  const secrets = getEncryptionSecrets()
+  const secrets = await getEncryptionSecrets()
   const cipher = crypto.createCipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
-  const output = Buffer.concat([cipher.update(lookups), cipher.final()])
-  fs.writeFile(historyFile, output, (err) => {
-    if (err) {
-      console.log("Error writing lookup history to disk: ")
-      console.log(err)
-    }
-  });
+  const output = Buffer.concat([cipher.update(JSON.stringify(lookups)), cipher.final()])
+  try {
+    fs.writeFileSync(historyFile, output)
+  } catch (err) {
+    console.log("Error writing lookup history to disk: ")
+    console.log(err)
+  }
 }
 
 
 // If passed an argument array from secondary instance, process arguments from it
 // otherwise, if primary instance, process arguments from app.commandLine
-function parseCommandLineArgs(argv = null){
-
+async function parseCommandLineArgs(argv = null){
   let redtailLookupNumber = ''
   
   if(argv){
@@ -180,9 +180,8 @@ function parseCommandLineArgs(argv = null){
   // If passed a redtail number, push it to lookups with pending status and update lookup history on disk
   if(redtailLookupNumber) {
     lookups.push(new lookup(Date.now(), 'Redtail', 'Phone', redtailLookupNumber, 'Pending', '', []))
-    saveLookupHistory()
+    await saveLookupHistory()
   }
-  
 }
 
 function getCommandLineValue(argv, name) {
@@ -198,6 +197,7 @@ function getCommandLineValue(argv, name) {
 async function attemptPendingLookups() {
   // Abort if there's no lookups to check
   if(lookups.length < 1){
+    console.log("Aborting 'attemptPendingLookups() as lookups array is empty")
     return
   }
 
@@ -206,13 +206,13 @@ async function attemptPendingLookups() {
   if(pending.length > 0){
     for (var lookup of pending) {
       if(lookup?.crm === 'Redtail' && lookup?.type === 'Phone' && lookup?.input) {
-        await lookupRedtailPhone(lookup)
+        lookupRedtailPhone(lookup)
       }
     }
   }
 
   // Ensure file on disk is updated with latest results
-  saveLookupHistory()
+  await saveLookupHistory()
 
   // Refresh Screenpop and History windows with latest lookup data
   if(screenpopWindow && !screenpopWindow.webContents.isLoading()){
@@ -223,10 +223,10 @@ async function attemptPendingLookups() {
   }
 }
 
-async function lookupRedtailPhone(lookup) {
+function lookupRedtailPhone(lookup) {
   // If missing input or timestamp values, reject the lookup
   // TODO: decide best way to handle this going forward
-  if(!lookup?.input || !input?.timestamp) {
+  if(!lookup?.input || !lookup?.timestamp) {
     console.log('lookup aborted, missing input and/or timestamp:')
     console.log(lookup)
   }
@@ -244,7 +244,7 @@ async function lookupRedtailPhone(lookup) {
 
   // If missing Redtail auth key, display credential input modal
   if(!redtailSettings.auth.key) {
-    openAuthModal('Redtail', lookup.input, 'Enter Redtail credentials to lookup contact.')
+    openAuthModal('Redtail', 'Enter Redtail credentials to lookup contact.')
     return
   }
 
@@ -280,6 +280,8 @@ async function lookupRedtailPhone(lookup) {
         lookups[i].status = 'Success'
         lookups[i].details = `Redtail returned 0 contacts matching phone number '${lookups[i].input}'`
       }
+      // 
+      attemptPendingLookups()
     })
   })
   request.end()
@@ -411,19 +413,13 @@ function authenticateRedtail(authData, UserkeyToken = '') {
   request.end()
 }
 
-// TODO: change this to minimize to task bar on screenpopWindow close
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
 // If any CRM auth settings have been stored in OS User's Keychain, load them into memory
 async function checkKeychainForAuth() {
   redtailSettings.auth.name = await keytar.getPassword(keytarService, 'redtail-username')
   redtailSettings.auth.id = await keytar.getPassword(keytarService, 'redtail-userid')
   redtailSettings.auth.key = await keytar.getPassword(keytarService, 'redtail-userkey')
 }
+
 
 class lookup {
   constructor(timestamp, crm, type, input, status, details, results) {
