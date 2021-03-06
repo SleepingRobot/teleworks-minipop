@@ -38,13 +38,7 @@ if(isPrimaryInstance) {
 }
 
 // When ready, render ScreenPop window and process any CLI args
-app.whenReady().then(async () => {
-  if (isDev) {
-      console.log('Running in development');
-  } else {
-      console.log('Running in production');
-  }
-  
+app.whenReady().then(async () => {  
   initTrayIcon()
   initWindows()
   //await clearAuth('Redtail')
@@ -145,8 +139,8 @@ async function loadLookupHistory() {
       lookups = JSON.parse(output)
     }
   } catch (err) {
-    console.log("Error reading lookup history from disk: ")
-    console.log(err)
+    logErr('Error reading lookup history from disk: ')
+    logErr(err)
   }
 }
 
@@ -160,8 +154,8 @@ async function saveLookupHistory() {
   try {
     fs.writeFileSync(historyFile, output)
   } catch (err) {
-    console.log("Error writing lookup history to disk: ")
-    console.log(err)
+    logErr('Error writing lookup history to disk: ')
+    logErr(err)
   }
 }
 
@@ -197,7 +191,7 @@ function getCommandLineValue(argv, name) {
 async function attemptPendingLookups() {
   // Abort if there's no lookups to check
   if(lookups.length < 1){
-    console.log("Aborting 'attemptPendingLookups() as lookups array is empty")
+    logErr("Aborting 'attemptPendingLookups() as lookups array is empty")
     return
   }
 
@@ -227,18 +221,18 @@ function lookupRedtailPhone(lookup) {
   // If missing input or timestamp values, reject the lookup
   // TODO: decide best way to handle this going forward
   if(!lookup?.input || !lookup?.timestamp) {
-    console.log('lookup aborted, missing input and/or timestamp:')
-    console.log(lookup)
+    logErr('lookup aborted, missing input and/or timestamp:')
+    logErr(lookup)
   }
 
   let i = lookups.findIndex(x => x.timestamp == lookup.timestamp)
   if (i < 0) {
     // TODO: Decide best way to handle this scenario, as well. Just add error to log file?
-    console.log('Unable to find lookup entry used in Redtail Phone Lookup in lookups array')
-    console.log('---lookup:')
-    console.log(lookup)
-    console.log('---lookups:')
-    console.log(lookups)
+    logErr('Unable to find lookup entry used in Redtail Phone Lookup in lookups array')
+    logErr('---lookup:')
+    logErr(lookup)
+    logErr('---lookups:')
+    logErr(lookups)
     return
   }
 
@@ -418,6 +412,10 @@ async function checkKeychainForAuth() {
   redtailSettings.auth.name = await keytar.getPassword(keytarService, 'redtail-username')
   redtailSettings.auth.id = await keytar.getPassword(keytarService, 'redtail-userid')
   redtailSettings.auth.key = await keytar.getPassword(keytarService, 'redtail-userkey')
+}
+
+function logErr(err){
+  console.error(err)
 }
 
 
