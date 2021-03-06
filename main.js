@@ -49,6 +49,7 @@ app.whenReady().then(async () => {
   await checkKeychainForAuth()
   loadLookupHistory()
   parseCommandLineArgs()
+  attemptPendingLookups()
 })
 
 function initTrayIcon() {
@@ -176,9 +177,10 @@ function parseCommandLineArgs(argv = null){
     redtailLookupNumber = app.commandLine.getSwitchValue('redtail-phone')
   }
 
-  // If passed a redtail number, look it up
+  // If passed a redtail number, push it to lookups with pending status and update lookup history on disk
   if(redtailLookupNumber) {
-    lookupRedtailContact(redtailLookupNumber)
+    lookups.push(new lookup(Date.now(), 'Redtail', 'Phone', redtailLookupNumber, 'Pending', '', []))
+    saveLookupHistory()
   }
   
 }
@@ -192,15 +194,62 @@ function getCommandLineValue(argv, name) {
   }
 }
 
-function lookupRedtailContact(cliNumber) {
+// Attempts to resolve any pending lookups, then refreshes Screenpop and History data
+async function attemptPendingLookups() {
+  // Abort if there's no lookups to check
+  if(lookups.length < 1){
+    return
+  }
+
+  // Otherwise attempt to complete any pending lookups
+  const pending = lookups.filter(l => l?.status === 'Pending')
+  if(pending.length > 0){
+    for (var lookup of pending) {
+      if(lookup?.crm === 'Redtail' && lookup?.type === 'Phone' && lookup?.input) {
+        await lookupRedtailPhone(lookup)
+      }
+    }
+  }
+
+  // Ensure file on disk is updated with latest results
+  saveLookupHistory()
+
+  // Refresh Screenpop and History windows with latest lookup data
+  if(screenpopWindow && !screenpopWindow.webContents.isLoading()){
+    screenpopWindow.webContents.send('screenpop-data', lookups[lookups.length - 1])
+  }
+  if(historyWindow && !historyWindow.webContents.isLoading()) {
+    historyWindow.webContents.send('history-data', lookups)
+  }
+}
+
+async function lookupRedtailPhone(lookup) {
+  // If missing input or timestamp values, reject the lookup
+  // TODO: decide best way to handle this going forward
+  if(!lookup?.input || !input?.timestamp) {
+    console.log('lookup aborted, missing input and/or timestamp:')
+    console.log(lookup)
+  }
+
+  let i = lookups.findIndex(x => x.timestamp == lookup.timestamp)
+  if (i < 0) {
+    // TODO: Decide best way to handle this scenario, as well. Just add error to log file?
+    console.log('Unable to find lookup entry used in Redtail Phone Lookup in lookups array')
+    console.log('---lookup:')
+    console.log(lookup)
+    console.log('---lookups:')
+    console.log(lookups)
+    return
+  }
+
   // If missing Redtail auth key, display credential input modal
   if(!redtailSettings.auth.key) {
-    openAuthModal('Redtail', cliNumber, 'Enter Redtail credentials to lookup contact.')
+    openAuthModal('Redtail', lookup.input, 'Enter Redtail credentials to lookup contact.')
     return
   }
 
   // Parse number to format compatible with Redtail API
-  const parsedNumber = parseNumber(cliNumber)
+  const parsedNumber = parseNumber(lookup.input)
 
   // Prepare HTTP request to Redtail CRM API
   const { net } = require('electron')
@@ -220,11 +269,16 @@ function lookupRedtailContact(cliNumber) {
   request.on('response', (response) => {
     response.on('data', (d) => {
       const resp = JSON.parse(d)
-      // TODO: handle multiple matches. i.e., contactData[c:[{},{}], c:[{}], c:[{},{},{}], etc]
-      if (resp?.contacts?.length > 0) {
-        resp.contacts[0].cli_number = cliNumber
-        resp.contacts[0].call_received = Date.now()
-        pushLookupResults(resp.contacts[0])
+      let matchCount = resp?.contacts?.length
+      if (matchCount > 0) {
+        lookups[i].status = 'Success'
+        lookups[i].details = `Redtail returned ${matchCount} contacts matching phone number '${lookups[i].input}'`
+        for (var contact of resp.contacts) {
+          lookups[i].results.push(contact)
+        }
+      } else {
+        lookups[i].status = 'Success'
+        lookups[i].details = `Redtail returned 0 contacts matching phone number '${lookups[i].input}'`
       }
     })
   })
@@ -234,20 +288,6 @@ function lookupRedtailContact(cliNumber) {
 // Strips '+1' and all non-digit characters from number, if present
 function parseNumber (n) {
   return n.replace('+1','').replace(/\D/g,'')
-}
-
-// Add new lookup results to stack, update ScreenPop and CallHistory windows
-function pushLookupResults(c) {
-  lookups.push(c)
-  // TODO: securely write new contactData array to encrypted file
-
-  if(screenpopWindow && !screenpopWindow.webContents.isLoading()){
-    screenpopWindow.webContents.send('screenpop-data', c)
-  }
-
-  if(historyWindow && !historyWindow.webContents.isLoading()) {
-    historyWindow.webContents.send('history-data', lookups)
-  }
 }
 
 function openAuthModal(crm, cliNumber, message = null) {
@@ -361,7 +401,7 @@ function authenticateRedtail(authData, UserkeyToken = '') {
             if(authData?.cliNumber){
               // Note: keytar.setPassword yields nothing, so we manually delay a couple seconds
               //       to give the OS time to store the secret first just in case
-              setTimeout(() => {lookupRedtailContact(authData.cliNumber)}, 2000)  
+              setTimeout(() => {lookupRedtailPhone(authData.cliNumber)}, 2000)  
             }
           }
         }
@@ -389,3 +429,14 @@ async function checkKeychainForAuth() {
   redtailSettings.auth.key = await keytar.getPassword(keytarService, 'redtail-userkey')
 }
 
+class lookup {
+  constructor(timestamp, crm, type, input, status, details, results) {
+    this.timestamp = timestamp
+    this.crm = crm
+    this.type = type
+    this.input = input
+    this.status = status
+    this.details = details
+    this.results = results
+  }
+}
