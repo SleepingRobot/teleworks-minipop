@@ -290,12 +290,12 @@ function parseNumber (n) {
   return n.replace('+1','').replace(/\D/g,'')
 }
 
-function openAuthModal(crm, cliNumber, message = null) {
+function openAuthModal(crm, message = null) {
   if (!message) {
     message = `Enter ${crm} Account Credentials.`
   }
   
-  const authData = {crm: crm, cliNumber: cliNumber, message: message }
+  const authData = {crm: crm, message: message }
 
   if (authWindow) {
     authWindow.webContents.on('did-finish-load', ()=>{
@@ -397,19 +397,15 @@ function authenticateRedtail(authData, UserkeyToken = '') {
               redtailSettings.auth.key = encodedUserKey
               keytar.setPassword(keytarService, 'redtail-userkey', encodedUserKey)
             }
-            // finally, if we were authenticating to fulfill a CLI number lookup, we can now re-attempt the lookup
-            if(authData?.cliNumber){
-              // Note: keytar.setPassword yields nothing, so we manually delay a couple seconds
-              //       to give the OS time to store the secret first just in case
-              setTimeout(() => {lookupRedtailPhone(authData.cliNumber)}, 2000)  
-            }
+            // finally, attempt to resolve any pending lookups and refresh Screenpop + History windows
+            attemptPendingLookups()
           }
         }
       })
     } else if(response?.statusCode >= 400 && response?.statusCode < 500) {
-      openAuthModal('Redtail', resp?.cliNumber, `Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR ${response.statusCode.toString()}). Please re-enter credentials to try again.`)
+      openAuthModal('Redtail', `Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR ${response.statusCode.toString()}). Please re-enter credentials to try again.`)
     } else {
-      openAuthModal('Redtail', resp?.cliNumber, `Error validating with Redtail API (HTTP ERR ${response.statusCode.toString()}). Please re-enter credentials to try again.`)
+      openAuthModal('Redtail', `Error validating with Redtail API (HTTP ERR ${response.statusCode.toString()}). Please re-enter credentials to try again.`)
     }
   })
   request.end()
