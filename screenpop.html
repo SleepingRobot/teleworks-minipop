@@ -69,9 +69,6 @@
             height: 100%;
             font-family: "Segoe MDL2 Assets";
             font-size: 10px;
-        }
-
-        #window-controls {
             -webkit-app-region: no-drag;
         }
 
@@ -110,6 +107,14 @@
 </head>
 <body>
     <script>
+        document.onreadystatechange = (event) => {
+            if (document.readyState == "complete") {
+                document.getElementById('close-button').addEventListener("click", event => {
+                    window.electron.send('hide-app');
+                });
+            }
+        };
+
         window.electron.receive('screenpop-data', (lookup) => {
             document.getElementById("zacNumber").innerHTML = lookup?.input || "<Missing>";
             document.getElementById("name").innerHTML = lookup.results[0]?.full_name || "<Missing>";

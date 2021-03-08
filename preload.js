@@ -4,7 +4,7 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     send: (channel, data) => {
-      const validChannels = ['auth-submission'];
+      const validChannels = ['auth-submission', 'hide-app'];
       if (validChannels.includes(channel)) {
           ipcRenderer.send(channel, data);
       }

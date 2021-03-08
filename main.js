@@ -323,6 +323,10 @@ ipcMain.on('auth-submission', async (event, authData) => {
   }
 })
 
+ipcMain.on('hide-app', async (event) => {
+  hideApp()
+})
+
 async function clearAuth(crm) {
   if (crm === 'Redtail') {
     redtailSettings.auth.name = ''
