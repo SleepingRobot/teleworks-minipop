@@ -6,16 +6,23 @@
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <style>
         * {margin: 0; padding: 0; border: 0; vertical-align: baseline;}
-        html {box-sizing: border-box;}
+        html {
+            box-sizing: border-box;
+            
+        }
         *, *:before, *:after {box-sizing: inherit;}
-        html, body {height: 100%; margin: 0;}
+        html, body {
+            height: 100%; margin: 0;
+        }
 
         body {
+            border-radius: 8px;
             border: 1px solid #48545c;
-            overflow-y: hidden;
+            overflow: hidden;
         }
 
         #titlebar {
+            border-radius: 8px 8px 0 0;
             display: block;
             position: fixed;
             top: 0;
@@ -26,6 +33,10 @@
             background: #EEEDEE;
             display: grid;
             grid-template-columns: auto 138px;
+            border-left: 1px solid #48545c;
+            border-top: 1px solid #48545c;
+            border-right: 1px solid #48545c;
+            border-bottom: none;
         }
 
         #titlebar #drag-region {
@@ -39,15 +50,17 @@
             display: flex;
             align-items: center;
             margin-left: 8px;
-            overflow-x: hidden;
+            overflow: hidden;
             font-family: "Segoe UI", sans-serif;
             font-size: 12px;
         }
 
         #main {
-            height: calc(100% - 32px);
+            border-radius: 0 0 8px 8px;
+            height: calc(100% - 31px);
             width: 100%;
-            margin-top: 32px;
+            margin-top: 31px;
+            background-color: #fff;
         }
         
         h1 {
@@ -96,10 +109,12 @@
         }
 
         #close-button:hover {
+            border-radius: 0 8px 0 0;
             background: #E81123 !important;
         }
 
         #close-button:active {
+            border-radius: 0 8px 0 0;
             background: #f1707a !important;
             color: #000;
         }
@@ -133,7 +148,7 @@
                   <svg width="12" height="12" viewBox="0 0 12 12">
                     <path
                       d="m6.8496 6 5.1504 5.1504-0.84961 0.84961-5.1504-5.1504-5.1504 5.1504-0.84961-0.84961 5.1504-5.1504-5.1504-5.1504 0.84961-0.84961 5.1504 5.1504 5.1504-5.1504 0.84961 0.84961z"
-                      stroke-width=".3" />
+                      stroke-width=".3" fill="#898989" />
                   </svg>
                 </div>
               </div>

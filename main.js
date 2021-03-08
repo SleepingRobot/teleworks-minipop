@@ -37,8 +37,14 @@ if(isPrimaryInstance) {
   app.exit()
 }
 
-// When ready, render ScreenPop window and process any CLI args
-app.whenReady().then(async () => {  
+
+// Disable HW acceleration and add delay to app ready to account for transparency bug
+// https://github.com/electron/electron/issues/16809
+app.disableHardwareAcceleration()
+app.on('ready', () => setTimeout(onAppReady, 500));
+
+
+async function onAppReady() {
   initTrayIcon()
   initWindows()
   //await clearAuth('Redtail')
@@ -46,7 +52,7 @@ app.whenReady().then(async () => {
   await loadLookupHistory()
   await parseCommandLineArgs()
   attemptPendingLookups()
-})
+}
 
 function initTrayIcon() {
   tray = new Tray(`${__dirname}/build/icon-bg.png`)
@@ -60,6 +66,7 @@ function initTrayIcon() {
 
 function initWindows() {
   const windowOptions = {
+    transparent: true, 
     frame: false,
     webPreferences: {
       allowRunningInsecureContent: false,
