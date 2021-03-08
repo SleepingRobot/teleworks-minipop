@@ -49,7 +49,7 @@ app.whenReady().then(async () => {
 })
 
 function initTrayIcon() {
-  tray = new Tray(`${__dirname}/build/icon.png`)
+  tray = new Tray(`${__dirname}/build/icon-bg.png`)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show', type: 'normal', click() { showApp() } },
     { label: 'Exit', type: 'normal', click() { app.exit() } }
@@ -60,6 +60,7 @@ function initTrayIcon() {
 
 function initWindows() {
   const windowOptions = {
+    frame: false,
     webPreferences: {
       allowRunningInsecureContent: false,
       contextIsolation: true,

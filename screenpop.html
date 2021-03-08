@@ -5,8 +5,49 @@
     <title>Teleworks ScreenPop</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <style>
+        * {margin: 0; padding: 0; border: 0; vertical-align: baseline;}
+        html {box-sizing: border-box;}
+        *, *:before, *:after {box-sizing: inherit;}
+        html, body {height: 100%; margin: 0;}
+
         body {
-            background-color: linen;
+            border: 1px solid #48545c;
+            overflow-y: hidden;
+        }
+
+        #titlebar {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 32px;
+            width: 100%;
+            padding: 4px;
+            background: #EEEDEE;
+            display: grid;
+            grid-template-columns: auto 138px;
+        }
+
+        #titlebar #drag-region {
+            width: 100%;
+            height: 100%;
+            -webkit-app-region: drag;
+        }
+
+        #window-title {
+            grid-column: 1;
+            display: flex;
+            align-items: center;
+            margin-left: 8px;
+            overflow-x: hidden;
+            font-family: "Segoe UI", sans-serif;
+            font-size: 12px;
+        }
+
+        #main {
+            height: calc(100% - 32px);
+            width: 100%;
+            margin-top: 32px;
         }
         
         h1 {
@@ -17,6 +58,53 @@
         span {
             font-size: medium;
             font-weight: normal;
+        }
+
+        #window-controls {
+            display: grid;
+            grid-template-columns: repeat(1, 46px);
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            font-family: "Segoe MDL2 Assets";
+            font-size: 10px;
+        }
+
+        #window-controls {
+            -webkit-app-region: no-drag;
+        }
+
+        #window-controls .button {
+            grid-row: 1 / span 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        #window-controls .button {
+            user-select: none;
+            cursor: default;
+            fill: white;
+        }
+
+        #window-controls .button:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        #window-controls .button:active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #close-button:hover {
+            background: #E81123 !important;
+        }
+
+        #close-button:active {
+            background: #f1707a !important;
+            color: #000;
         }
     </style>
 </head>
@@ -29,9 +117,29 @@
             document.getElementById("status").innerHTML = lookup.results[0]?.status || "<Missing>";
         });
     </script>
-    <h1>ZAC Number: <span id="zacNumber"></span></h1>
-    <h1>Name: <span id="name"></span></h1>
-    <h1>Category: <span id="category"></span></h1>
-    <h1>Status: <span id="status"></span></h1>
+
+    <header id="titlebar">
+        <div id="drag-region">
+            <div id="window-title">
+                <span>MINIPOP</span>
+            </div>
+            <div id="window-controls">
+                <div class="button" id="close-button">
+                  <svg width="12" height="12" viewBox="0 0 12 12">
+                    <path
+                      d="m6.8496 6 5.1504 5.1504-0.84961 0.84961-5.1504-5.1504-5.1504 5.1504-0.84961-0.84961 5.1504-5.1504-5.1504-5.1504 0.84961-0.84961 5.1504 5.1504 5.1504-5.1504 0.84961 0.84961z"
+                      stroke-width=".3" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+        </div>
+    </header>
+    <div id="main">
+        <h1>ZAC Number: <span id="zacNumber"></span></h1>
+        <h1>Name: <span id="name"></span></h1>
+        <h1>Category: <span id="category"></span></h1>
+        <h1>Status: <span id="status"></span></h1>
+    </div>
 </body>
 </html>
