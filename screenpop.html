@@ -134,6 +134,11 @@
             margin-top: 31px;
             background-color: #fff;
         }
+
+        #crm-icon {
+            width: 32px;
+            height: 32px;
+        }
         
         .field {
             font-size: medium;
@@ -159,6 +164,10 @@
         };
 
         window.electron.receive('screenpop-data', (lookup) => {
+            if(lookup?.crm === 'Redtail') {
+                document.getElementById("crm-icon").src = "build/redtail-icon-small.png"
+                document.getElementById("crm-icon").alt = "Redtail CRM"
+            }
             document.getElementById("zacNumber").innerHTML = lookup?.input || "<Missing>";
             document.getElementById("name").innerHTML = lookup.results[0]?.full_name || "<Missing>";
             document.getElementById("category").innerHTML = lookup.results[0]?.category || "<Missing>";
@@ -189,6 +198,7 @@
         </div>
     </header>
     <div id="main">
+        <img  id="crm-icon" src="" alt=""/>
         <h1 class="field">ZAC Number: <span id="zacNumber"></span></h1>
         <h1 class="field">Name: <span id="name"></span></h1>
         <h1 class="field">Category: <span id="category"></span></h1>
