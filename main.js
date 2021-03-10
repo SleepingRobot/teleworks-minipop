@@ -219,6 +219,10 @@ async function attemptPendingLookups() {
   // Refresh Screenpop and History windows with latest lookup data
   if(screenpopWindow && !screenpopWindow.webContents.isLoading()){
     screenpopWindow.webContents.send('screenpop-data', lookups[lookups.length - 1])
+    console.log(lookups[lookups.length - 1])
+    console.log(lookups[lookups.length - 1].results[0].addresses)
+    console.log(lookups[lookups.length - 1].results[0].emails)
+    console.log(lookups[lookups.length - 1].results[0].phones)
   }
   if(historyWindow && !historyWindow.webContents.isLoading()) {
     historyWindow.webContents.send('history-data', lookups)

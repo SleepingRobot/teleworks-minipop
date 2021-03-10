@@ -133,9 +133,10 @@
             height: calc(100% - 31px);
             width: 100%;
             margin-top: 31px;
+            padding: 5px;
             background-color: #fff;
             display: grid;
-            grid-gap: 2px;
+            grid-gap: 10px;
 		    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
             grid-template-rows: auto;
         }
@@ -162,6 +163,33 @@
         #contact-names-col {
             grid-column: 1 / span 2;
             grid-row: 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scroll-enabled {
+            overflow-y: auto;
+        }
+
+        .scroll-enabled::-webkit-scrollbar-thumb {
+            background-color: #afc0c7;
+            background-clip: content-box;
+            border: 1px solid rgba(0,0,0,0);
+        }
+
+        .scroll-enabled::-webkit-scrollbar-track {
+            background-color: #fff;
+            border: 1px solid #c6c6c6;
+            border-radius: 1px;
+            box-shadow: 2px 2px 1px #7e7e7e17;
+        }
+
+        .scroll-enabled::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .scroll-enabled::-webkit-scrollbar-corner {
+            background: rgba(0,0,0,0);
         }
 
         #contact-details-col {
@@ -185,15 +213,42 @@
             width: 32px;
             height: 32px;
         }
+
+        .contact-name-active {
+            font-size: medium;
+            font-weight: bold;
+            color: #22b1df;
+            background-color: #e2f2f8;
+        }
+
+        .contact-name-inactive {
+            font-size: medium;
+            font-weight: bold;
+            color: #F2902E;
+        }
+
+        #lookup {
+            color: #7e7e7e;
+        }
         
         .field {
             font-size: medium;
-            font-weight: bold;
+            font-weight: normal;
+
         }
 
         .field span {
             font-size: medium;
             font-weight: normal;
+        }
+
+        #close-button {
+            color: #7e7e7e;
+            background-color: #fff;
+            border: 1px solid #7e7e7e;
+            box-shadow: 2px 2px 1px #7e7e7e49;
+            border-radius: 5px;
+            padding: 2px 7px;
         }
        
     </style>
@@ -219,15 +274,14 @@
             document.getElementById("lookup").innerHTML = lookup?.input || "";
             if (lookup?.timestamp){
                 let formattedDate = new Date(lookup.timestamp).toLocaleString();
-                document.getElementById("timestamp").innerHTML = formattedDate || "" ;
+                document.getElementById("timestamp").innerHTML = "Received " + formattedDate || "" ;
             }
             
             document.getElementById("name").innerHTML = lookup.results[0]?.full_name || "<Missing>";
             document.getElementById("status").innerHTML = lookup.results[0]?.status || "<Missing>";
             document.getElementById("source").innerHTML = lookup.results[0]?.source || "<Missing>";
             document.getElementById("category").innerHTML = lookup.results[0]?.category || "<Missing>";
-            document.getElementById("clientSince").innerHTML = lookup.results[0]?.clientSince || "<Missing>";
-            
+            document.getElementById("client-since").innerHTML = lookup.results[0]?.client_since || "<Missing>";
         });
     </script>
 
@@ -259,12 +313,23 @@
         </div>
         <div id="details-row" class="center">
             <span id="details" class="orange"></span>
-            <span id="lookup">lookup</span>
+            <span id="lookup"></span>
         </div>
-        <div id="contact-names-col">
-            <span id="name"></span>
+        <div id="contact-names-col" class="scroll-enabled">
+            <span id="name" class="contact-name-active"></span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
+            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
         </div>
-        <div id="contact-details-col">
+        <div id="contact-details-col" class="scroll-enabled">
             <h1 class="field">Status: <span id="status"></span></h1>
             <h1 class="field">Source: <span id="source"></span></h1>
             <h1 class="field">Category: <span id="category"></span></h1>
@@ -274,7 +339,7 @@
             <span id="timestamp"></span>
         </div>
         <div id="button-row" class="center">
-            <button onclick="hideApp()">Close</button>
+            <button id="close-button" onclick="hideApp()">Close</button>
         </div>
     </div>
 </body>
