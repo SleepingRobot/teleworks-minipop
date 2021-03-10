@@ -81,7 +81,7 @@ function initWindows() {
     e.preventDefault()
     hideApp()
   }
-  screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:200})
+  screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:300})
   screenpopWindow.removeMenu()
   screenpopWindow.loadFile('screenpop.html')
   screenpopWindow.on('close', closeToTray)
@@ -274,15 +274,14 @@ function lookupRedtailPhone(lookup) {
       let matchCount = resp?.contacts?.length
       if (matchCount > 0) {
         lookups[i].status = 'Success'
-        lookups[i].details = `Redtail returned ${matchCount} contacts matching phone number '${lookups[i].input}'`
+        lookups[i].details = `Redtail returned ${matchCount} contacts matching phone number`
         for (var contact of resp.contacts) {
           lookups[i].results.push(contact)
         }
       } else {
         lookups[i].status = 'Success'
-        lookups[i].details = `Redtail returned 0 contacts matching phone number '${lookups[i].input}'`
+        lookups[i].details = `Redtail returned 0 contacts matching phone number`
       }
-      // 
       attemptPendingLookups()
     })
   })
@@ -293,6 +292,8 @@ function lookupRedtailPhone(lookup) {
 function parseNumber (n) {
   return n.replace('+1','').replace(/\D/g,'')
 }
+
+
 
 function openAuthModal(crm, message = null) {
   if (!message) {
@@ -374,8 +375,6 @@ function authenticateRedtail(authData, UserkeyToken = '') {
   } else {
     request.setHeader('Authorization', 'Userkeyauth ' + UserkeyToken)
   }
-  
-
 
   // Process HTTP response from Redtail CRM API
   request.on('response', (response) => {

@@ -8,6 +8,7 @@
         * {margin: 0; padding: 0; border: 0; vertical-align: baseline;}
         html {
             box-sizing: border-box;
+            font-family: sans-serif;
             
         }
         *, *:before, *:after {box-sizing: inherit;}
@@ -133,6 +134,51 @@
             width: 100%;
             margin-top: 31px;
             background-color: #fff;
+            display: grid;
+            grid-gap: 2px;
+		    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            grid-template-rows: auto;
+        }
+
+        .center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
+
+        #crm-icon-row {
+            grid-column: 1 / span 5;
+            grid-row: 1;
+        }
+
+        #details-row {
+            grid-column: 1 / span 5;
+            grid-row: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #contact-names-col {
+            grid-column: 1 / span 2;
+            grid-row: 3;
+        }
+
+        #contact-details-col {
+            grid-column: 3 / span 3;
+            grid-row: 3;
+        }
+
+        #timestamp-row {
+            grid-column: 1 / span 5;
+            grid-row: 4;
+            font-size: small;
+            color: #7e7e7e;
+        }
+
+        #button-row {
+            grid-column: 1 / span 5;
+            grid-row: 5;
         }
 
         #crm-icon {
@@ -149,17 +195,18 @@
             font-size: medium;
             font-weight: normal;
         }
-
        
     </style>
 </head>
 <body>
     <script>
+        function hideApp() {
+            window.electron.send('hide-app');
+        }
+
         document.onreadystatechange = (event) => {
             if (document.readyState == "complete") {
-                document.getElementById('close-icon').addEventListener("click", event => {
-                    window.electron.send('hide-app');
-                });
+                document.getElementById('close-icon').addEventListener("click", hideApp)
             }
         };
 
@@ -168,10 +215,19 @@
                 document.getElementById("crm-icon").src = "build/redtail-icon-small.png"
                 document.getElementById("crm-icon").alt = "Redtail CRM"
             }
-            document.getElementById("zacNumber").innerHTML = lookup?.input || "<Missing>";
+            document.getElementById("details").innerHTML = lookup?.details || "";
+            document.getElementById("lookup").innerHTML = lookup?.input || "";
+            if (lookup?.timestamp){
+                let formattedDate = new Date(lookup.timestamp).toLocaleString();
+                document.getElementById("timestamp").innerHTML = formattedDate || "" ;
+            }
+            
             document.getElementById("name").innerHTML = lookup.results[0]?.full_name || "<Missing>";
-            document.getElementById("category").innerHTML = lookup.results[0]?.category || "<Missing>";
             document.getElementById("status").innerHTML = lookup.results[0]?.status || "<Missing>";
+            document.getElementById("source").innerHTML = lookup.results[0]?.source || "<Missing>";
+            document.getElementById("category").innerHTML = lookup.results[0]?.category || "<Missing>";
+            document.getElementById("clientSince").innerHTML = lookup.results[0]?.clientSince || "<Missing>";
+            
         });
     </script>
 
@@ -198,11 +254,28 @@
         </div>
     </header>
     <div id="main">
-        <img  id="crm-icon" src="" alt=""/>
-        <h1 class="field">ZAC Number: <span id="zacNumber"></span></h1>
-        <h1 class="field">Name: <span id="name"></span></h1>
-        <h1 class="field">Category: <span id="category"></span></h1>
-        <h1 class="field">Status: <span id="status"></span></h1>
+        <div id="crm-icon-row" class="center">
+            <img  id="crm-icon" src="" alt=""/>
+        </div>
+        <div id="details-row" class="center">
+            <span id="details" class="orange"></span>
+            <span id="lookup">lookup</span>
+        </div>
+        <div id="contact-names-col">
+            <span id="name"></span>
+        </div>
+        <div id="contact-details-col">
+            <h1 class="field">Status: <span id="status"></span></h1>
+            <h1 class="field">Source: <span id="source"></span></h1>
+            <h1 class="field">Category: <span id="category"></span></h1>
+            <h1 class="field">Client Since: <span id="client-since"></span></h1>
+        </div>
+        <div id="timestamp-row" class="center">
+            <span id="timestamp"></span>
+        </div>
+        <div id="button-row" class="center">
+            <button onclick="hideApp()">Close</button>
+        </div>
     </div>
 </body>
 </html>
