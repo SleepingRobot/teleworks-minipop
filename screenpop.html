@@ -69,6 +69,10 @@
             color: #F2902E;
         }
 
+        .red {
+            color: #ff8989;
+        }
+
         #titlebar-center {
             display: flex;
             align-items: center;
@@ -227,6 +231,14 @@
             color: #F2902E;
         }
 
+        .hidden {
+            display:none;
+        }
+
+        .invisible {
+            visibility:hidden;
+        }
+
         #lookup {
             color: #7e7e7e;
         }
@@ -255,34 +267,118 @@
 </head>
 <body>
     <script>
-        function hideApp() {
-            window.electron.send('hide-app');
-        }
-
         document.onreadystatechange = (event) => {
             if (document.readyState == "complete") {
-                document.getElementById('close-icon').addEventListener("click", hideApp)
+                document.getElementById("close-icon").addEventListener("click", hideApp)
             }
         };
 
-        window.electron.receive('screenpop-data', (lookup) => {
-            if(lookup?.crm === 'Redtail') {
-                document.getElementById("crm-icon").src = "build/redtail-icon-small.png"
-                document.getElementById("crm-icon").alt = "Redtail CRM"
-            }
-            document.getElementById("details").innerHTML = lookup?.details || "";
-            document.getElementById("lookup").innerHTML = lookup?.input || "";
-            if (lookup?.timestamp){
-                let formattedDate = new Date(lookup.timestamp).toLocaleString();
-                document.getElementById("timestamp").innerHTML = "Received " + formattedDate || "" ;
-            }
-            
-            document.getElementById("name").innerHTML = lookup.results[0]?.full_name || "<Missing>";
-            document.getElementById("status").innerHTML = lookup.results[0]?.status || "<Missing>";
-            document.getElementById("source").innerHTML = lookup.results[0]?.source || "<Missing>";
-            document.getElementById("category").innerHTML = lookup.results[0]?.category || "<Missing>";
-            document.getElementById("client-since").innerHTML = lookup.results[0]?.client_since || "<Missing>";
+        window.electron.receive("screenpop-data", (lookup, fieldsToDisplay = ["redtail-status", "redtail-source", "redtail-category"]) => {
+              refresh(lookup, fieldsToDisplay)
         });
+
+        function hideApp() {
+            window.electron.send("hide-app");
+        }
+
+        function refresh(lookup, fieldsToDisplay) {
+            clear();
+            try {
+                if(lookup?.crm) {
+                    document.getElementById("crm-icon").src = `build/${lookup.crm.toLowerCase()}-icon-small.png`
+                    document.getElementById("crm-icon").alt = `${lookup.crm} CRM`
+                    document.getElementById("crm-icon").classList.remove("hidden")
+                }
+                document.getElementById("details").innerHTML = lookup?.details || "";
+                if(lookup.results?.length === 1) {
+                    document.getElementById("details").classList.add("orange");
+                } else {
+                    document.getElementById("details").classList.add("red");
+                }
+                document.getElementById("lookup").innerHTML = lookup?.input || "";
+
+                if (lookup?.timestamp){
+                    let formattedDate = new Date(lookup.timestamp).toLocaleString();
+                    document.getElementById("timestamp").innerHTML = "Received " + formattedDate || "";
+                }
+                if(lookup.results?.length > 0) {
+                    for (const [index, contact] of lookup.results.entries()) {
+                        let nameSpan = document.createElement("span");
+                        if(index === 0) {
+                            nameSpan.classList.add("contact-name-active")
+                            setDetails(lookup?.crm, contact)
+                        } else {
+                            nameSpan.classList.add("contact-name-inactive")
+                        }
+                        if(lookup?.crm === "Redtail") {
+                            nameSpan.innerHTML = contact?.full_name || "<MISSING>";
+                        }
+                        document.getElementById("contact-names-col").appendChild(nameSpan)
+                    }
+                }
+            } catch (err) {
+                // disregard errors
+                console.log(err)
+            }
+            displayFields(fieldsToDisplay)
+        }
+
+        function clear() {
+            try {
+                document.getElementById("crm-icon").removeAttribute("src")
+                document.getElementById("crm-icon").removeAttribute("alt")
+                document.getElementById("crm-icon").classList.add("hidden")
+                document.getElementById("details").classList.remove("orange");
+                document.getElementById("details").innerHTML = "";
+                document.getElementById("lookup").innerHTML = "";
+                document.getElementById("contact-names-col").innerHTML = "";
+                let fields = document.getElementById("contact-details-col").getElementsByTagName("span");
+                if(fields.length > 0) {
+                    for(let field of fields){
+                        field.innerHTML = "";
+                    }
+                }
+                document.getElementById("timestamp").innerHTML = "";
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        function setDetails(crm, contact) {
+            try {
+                if(crm === "Redtail") {
+                    document.getElementById("redtail-status").innerHTML = contact?.status || "<Missing>";
+                    document.getElementById("redtail-source").innerHTML = contact?.source || "<Missing>";
+                    document.getElementById("redtail-category").innerHTML = contact?.category || "<Missing>";
+                    document.getElementById("redtail-client-since").innerHTML = contact?.client_since || "<Missing>";
+                }
+            } catch (err) {
+                console.log(err)
+            }
+        }
+
+        // display fields specified in user settings, hide all others
+        function displayFields(fieldsToDisplay){
+            try {
+                let labels = document.getElementById("contact-details-col").getElementsByTagName("h1");
+                if(labels.length > 0) {
+                    for(let label of labels){
+                        let spans = label.getElementsByTagName("span");
+                        if(spans.length > 0){
+                            if(fieldsToDisplay.includes(spans[0].id)){
+                                //console.log("showing: " + spans[0].id)
+                                label.classList.remove("hidden")
+                            } else {
+                                //console.log("hiding: " + spans[0].id)
+                                label.classList.add("hidden")
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log(err)
+            }
+        }
     </script>
 
     <header id="titlebar">
@@ -315,25 +411,13 @@
             <span id="details" class="orange"></span>
             <span id="lookup"></span>
         </div>
-        <div id="contact-names-col" class="scroll-enabled">
-            <span id="name" class="contact-name-active"></span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-            <span id="name" class="contact-name-inactive">Bobby Bucks</span>
-        </div>
+        <div id="contact-names-col" class="scroll-enabled"></div>
         <div id="contact-details-col" class="scroll-enabled">
-            <h1 class="field">Status: <span id="status"></span></h1>
-            <h1 class="field">Source: <span id="source"></span></h1>
-            <h1 class="field">Category: <span id="category"></span></h1>
-            <h1 class="field">Client Since: <span id="client-since"></span></h1>
+            <!-- Redtail CRM -->
+            <h1 class="field">Status: <span id="redtail-status"></span></h1>
+            <h1 class="field">Source: <span id="redtail-source"></span></h1>
+            <h1 class="field">Category: <span id="redtail-category"></span></h1>
+            <h1 class="field">Client Since: <span id="redtail-client-since"></span></h1>
         </div>
         <div id="timestamp-row" class="center">
             <span id="timestamp"></span>
