@@ -1,0 +1,268 @@
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  vertical-align: baseline;
+}
+html {
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  border-radius: 8px;
+  border: 1px solid #48545c;
+  overflow: hidden;
+}
+
+#titlebar {
+  border-radius: 8px 8px 0 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 32px;
+  width: 100%;
+  padding: 4px;
+  background: #eeedee;
+  border-left: 1px solid #48545c;
+  border-top: 1px solid #48545c;
+  border-right: 1px solid #48545c;
+  border-bottom: none;
+}
+
+#titlebar #drag-region {
+  display: flex;
+  justify-content: space-between;
+  align-content: center;
+  width: 100%;
+  height: 100%;
+  -webkit-app-region: drag;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+#titlebar-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-left: 5px;
+}
+
+#app-icon {
+  display: flex;
+  width: 32px;
+  height: 24px;
+}
+
+#app-name {
+  margin-left: 5px;
+}
+
+.orange {
+  color: #f2902e;
+}
+
+.red {
+  color: #ff8989;
+}
+
+#titlebar-center {
+  display: flex;
+  align-items: center;
+}
+
+#window-name {
+  font-weight: bold;
+  color: #5eb4e7;
+}
+
+#titlebar-right {
+  display: flex;
+  justify-content: space-between;
+  width: 80px;
+  margin-right: 5px;
+  -webkit-app-region: no-drag;
+}
+
+.title-button {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  width: 20px;
+  height: 20px;
+  user-select: none;
+  cursor: default;
+  fill: white;
+}
+
+.title-button:hover {
+  background: rgba(255, 255, 255, 0.5);
+  background: rgba(100, 100, 100, 0.25) !important;
+  border-radius: 5px;
+}
+
+.title-button:active {
+  background: rgba(255, 255, 255, 0.8);
+  background: rgba(100, 100, 100, 0.15) !important;
+  border-radius: 5px;
+}
+
+#history-icon {
+  margin: auto auto;
+  width: 20px;
+  height: 20px;
+}
+
+#settings-icon {
+  margin: auto auto;
+  width: 20px;
+  height: 20px;
+}
+
+#close-icon {
+  margin: auto auto;
+  width: 16px;
+  height: 16px;
+}
+
+#main {
+  border-radius: 0 0 8px 8px;
+  height: calc(100% - 31px);
+  width: 100%;
+  margin-top: 31px;
+  padding: 5px;
+  background-color: #fff;
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  grid-template-rows: auto;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+#crm-icon-row {
+  grid-column: 1 / span 5;
+  grid-row: 1;
+}
+
+#details-row {
+  grid-column: 1 / span 5;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+#contact-names-col {
+  grid-column: 1 / span 2;
+  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+}
+
+.scroll-enabled {
+  overflow-y: auto;
+}
+
+.scroll-enabled::-webkit-scrollbar-thumb {
+  background-color: #afc0c7;
+  background-clip: content-box;
+  border: 1px solid rgba(0, 0, 0, 0);
+}
+
+.scroll-enabled::-webkit-scrollbar-track {
+  background-color: #fff;
+  border: 1px solid #c6c6c6;
+  border-radius: 1px;
+  box-shadow: 2px 2px 1px #7e7e7e17;
+}
+
+.scroll-enabled::-webkit-scrollbar {
+  width: 12px;
+}
+
+.scroll-enabled::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0);
+}
+
+#contact-details-col {
+  grid-column: 3 / span 3;
+  grid-row: 3;
+}
+
+#timestamp-row {
+  grid-column: 1 / span 5;
+  grid-row: 4;
+  font-size: small;
+  color: #7e7e7e;
+}
+
+#button-row {
+  grid-column: 1 / span 5;
+  grid-row: 5;
+}
+
+#crm-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.contact-name-active {
+  font-size: medium;
+  font-weight: bold;
+  color: #22b1df;
+  background-color: #e2f2f8;
+  cursor: default;
+}
+
+.contact-name-inactive {
+  font-size: medium;
+  font-weight: bold;
+  color: #f2902e;
+  cursor: default;
+}
+
+.hidden {
+  display: none;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+#lookup {
+  color: #7e7e7e;
+}
+
+.field {
+  font-size: medium;
+  font-weight: normal;
+}
+
+.field span {
+  font-size: medium;
+  font-weight: normal;
+}
+
+#close-button {
+  color: #7e7e7e;
+  background-color: #fff;
+  border: 1px solid #7e7e7e;
+  box-shadow: 2px 2px 1px #7e7e7e49;
+  border-radius: 5px;
+  padding: 2px 7px;
+}
