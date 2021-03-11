@@ -223,12 +223,14 @@
             font-weight: bold;
             color: #22b1df;
             background-color: #e2f2f8;
+            cursor: default;
         }
 
         .contact-name-inactive {
             font-size: medium;
             font-weight: bold;
             color: #F2902E;
+            cursor: default;
         }
 
         .hidden {
@@ -306,13 +308,14 @@
                         let nameSpan = document.createElement("span");
                         if(index === 0) {
                             nameSpan.classList.add("contact-name-active")
-                            setDetails(lookup?.crm, contact)
+                            setFields(lookup?.crm, contact)
                         } else {
                             nameSpan.classList.add("contact-name-inactive")
                         }
                         if(lookup?.crm === "Redtail") {
                             nameSpan.innerHTML = contact?.full_name || "<MISSING>";
                         }
+                        nameSpan.addEventListener("click", (e)=>{changeContact(e, lookup?.crm, contact)})
                         document.getElementById("contact-names-col").appendChild(nameSpan)
                     }
                 }
@@ -332,19 +335,24 @@
                 document.getElementById("details").innerHTML = "";
                 document.getElementById("lookup").innerHTML = "";
                 document.getElementById("contact-names-col").innerHTML = "";
-                let fields = document.getElementById("contact-details-col").getElementsByTagName("span");
-                if(fields.length > 0) {
-                    for(let field of fields){
-                        field.innerHTML = "";
-                    }
-                }
+                clearFields()
                 document.getElementById("timestamp").innerHTML = "";
             } catch(err) {
                 console.log(err)
             }
         }
 
-        function setDetails(crm, contact) {
+        function clearFields() {
+            let fields = document.getElementById("contact-details-col").getElementsByTagName("span");
+            if(fields.length > 0) {
+                for(let field of fields){
+                    field.innerHTML = "";
+                }
+            }
+        }
+
+        function setFields(crm, contact) {
+            clearFields()
             try {
                 if(crm === "Redtail") {
                     document.getElementById("redtail-status").innerHTML = contact?.status || "<Missing>";
@@ -378,6 +386,24 @@
             } catch (err) {
                 console.log(err)
             }
+        }
+
+        function changeContact (event, crm, contact) {
+           
+       
+            let contacts = document.getElementById("contact-names-col").getElementsByTagName("span");
+            if (contacts?.length > 0 ) {
+                for(let c of contacts){
+                    c.classList.remove("contact-name-active")
+                    c.classList.remove("contact-name-inactive")
+                    c.classList.add("contact-name-inactive")
+                }
+            }
+            if(event?.target){
+                event.target.classList.remove("contact-name-inactive")
+                event.target.classList.add("contact-name-active")
+            }
+            setFields(crm, contact)
         }
     </script>
 
