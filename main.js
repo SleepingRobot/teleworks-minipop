@@ -57,10 +57,12 @@ async function onAppReady() {
 function initTrayIcon() {
   tray = new Tray(`${__dirname}/build/icon-bg.png`)
   const contextMenu = Menu.buildFromTemplate([
+    { label: 'Teleworks MiniPop', type: 'normal', enabled: false},
+    { type: 'separator'},
     { label: 'Show', type: 'normal', click() { showApp() } },
     { label: 'Exit', type: 'normal', click() { app.exit() } }
   ])
-  tray.setToolTip('Teleworks Screenpop')
+  tray.setToolTip('Teleworks MiniPop')
   tray.setContextMenu(contextMenu)
 }
 
