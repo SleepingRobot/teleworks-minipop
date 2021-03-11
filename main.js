@@ -333,6 +333,16 @@ ipcMain.on('auth-submission', async (event, authData) => {
   }
 })
 
+ipcMain.on('toggle-history', async (event) => {
+  if(openWindows.includes('history')){
+    openWindows = openWindows.filter(e => e !== 'history')
+    historyWindow.hide()
+  } else {
+    openWindows.push('history')
+    historyWindow.show()
+  }
+})
+
 ipcMain.on('hide-app', async (event) => {
   hideApp()
 })

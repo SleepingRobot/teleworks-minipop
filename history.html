@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Teleworks MiniPop</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <script>
+        document.onreadystatechange = (event) => {
+            if (document.readyState == "complete") {
+                document.getElementById("close-icon").addEventListener("click", toggleHistory)
+            }
+        };
+
+        window.electron.receive("history-data", (lookups, fieldsToDisplay = ["redtail-status", "redtail-source", "redtail-category"]) => {
+              refresh(lookup, fieldsToDisplay)
+        });
+
+        function toggleHistory() {
+            window.electron.send("toggle-history");
+        }
+
+        // function refresh(lookup, fieldsToDisplay) {
+        //     clear();
+        //     try {
+        //         if(lookup?.crm) {
+        //             document.getElementById("crm-icon").src = `build/${lookup.crm.toLowerCase()}-icon-small.png`
+        //             document.getElementById("crm-icon").alt = `${lookup.crm} CRM`
+        //             document.getElementById("crm-icon").classList.remove("hidden")
+        //         }
+        //         document.getElementById("details").innerHTML = lookup?.details || "";
+        //         if(lookup.results?.length === 1) {
+        //             document.getElementById("details").classList.add("orange");
+        //         } else {
+        //             document.getElementById("details").classList.add("red");
+        //         }
+        //         document.getElementById("lookup").innerHTML = lookup?.input || "";
+
+        //         if (lookup?.timestamp){
+        //             let formattedDate = new Date(lookup.timestamp).toLocaleString();
+        //             document.getElementById("timestamp").innerHTML = "Received " + formattedDate || "";
+        //         }
+        //         if(lookup.results?.length > 0) {
+        //             for (const [index, contact] of lookup.results.entries()) {
+        //                 let nameSpan = document.createElement("span");
+        //                 if(index === 0) {
+        //                     nameSpan.classList.add("contact-name-active")
+        //                     setFields(lookup?.crm, contact)
+        //                 } else {
+        //                     nameSpan.classList.add("contact-name-inactive")
+        //                 }
+        //                 if(lookup?.crm === "Redtail") {
+        //                     nameSpan.innerHTML = contact?.full_name || "<MISSING>";
+        //                 }
+        //                 nameSpan.addEventListener("click", (e)=>{changeContact(e, lookup?.crm, contact)})
+        //                 document.getElementById("contact-names-col").appendChild(nameSpan)
+        //             }
+        //         }
+        //     } catch (err) {
+        //         // disregard errors
+        //         console.log(err)
+        //     }
+        //     displayFields(fieldsToDisplay)
+        // }
+
+        // function clear() {
+        //     try {
+        //         document.getElementById("crm-icon").removeAttribute("src")
+        //         document.getElementById("crm-icon").removeAttribute("alt")
+        //         document.getElementById("crm-icon").classList.add("hidden")
+        //         document.getElementById("details").classList.remove("orange");
+        //         document.getElementById("details").innerHTML = "";
+        //         document.getElementById("lookup").innerHTML = "";
+        //         document.getElementById("contact-names-col").innerHTML = "";
+        //         clearFields()
+        //         document.getElementById("timestamp").innerHTML = "";
+        //     } catch(err) {
+        //         console.log(err)
+        //     }
+        // }
+
+        // function clearFields() {
+        //     let fields = document.getElementById("contact-details-col").getElementsByTagName("span");
+        //     if(fields.length > 0) {
+        //         for(let field of fields){
+        //             field.innerHTML = "";
+        //         }
+        //     }
+        // }
+
+        // function setFields(crm, contact) {
+        //     clearFields()
+        //     try {
+        //         if(crm === "Redtail") {
+        //             document.getElementById("redtail-status").innerHTML = contact?.status || "<Missing>";
+        //             document.getElementById("redtail-source").innerHTML = contact?.source || "<Missing>";
+        //             document.getElementById("redtail-category").innerHTML = contact?.category || "<Missing>";
+        //             document.getElementById("redtail-client-since").innerHTML = contact?.client_since || "<Missing>";
+        //         }
+        //     } catch (err) {
+        //         console.log(err)
+        //     }
+        // }
+
+        // // display fields specified in user settings, hide all others
+        // function displayFields(fieldsToDisplay){
+        //     try {
+        //         let labels = document.getElementById("contact-details-col").getElementsByTagName("h1");
+        //         if(labels.length > 0) {
+        //             for(let label of labels){
+        //                 let spans = label.getElementsByTagName("span");
+        //                 if(spans.length > 0){
+        //                     if(fieldsToDisplay.includes(spans[0].id)){
+        //                         //console.log("showing: " + spans[0].id)
+        //                         label.classList.remove("hidden")
+        //                     } else {
+        //                         //console.log("hiding: " + spans[0].id)
+        //                         label.classList.add("hidden")
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     } catch (err) {
+        //         console.log(err)
+        //     }
+        // }
+
+        // function changeContact (event, crm, contact) {
+           
+       
+        //     let contacts = document.getElementById("contact-names-col").getElementsByTagName("span");
+        //     if (contacts?.length > 0 ) {
+        //         for(let c of contacts){
+        //             c.classList.remove("contact-name-active")
+        //             c.classList.remove("contact-name-inactive")
+        //             c.classList.add("contact-name-inactive")
+        //         }
+        //     }
+        //     if(event?.target){
+        //         event.target.classList.remove("contact-name-inactive")
+        //         event.target.classList.add("contact-name-active")
+        //     }
+        //     setFields(crm, contact)
+        // }
+    </script>
+
+    <header id="titlebar">
+        <div id="drag-region">
+            <div id="titlebar-left">
+                <img id="app-icon" src="build/icon.png" alt="Teleworks"/>
+                <span id="app-name">MINIP<span class="orange">O</span>P</span>
+            </div>
+            <div id="titlebar-center">
+                <span id="window-name">CALL HISTORY</span>
+            </div>
+            <div id="titlebar-right-one">
+                <div class="title-button">
+                    <img  id="close-icon" src="build/close.svg" alt="Close to tray"/>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div id="lookup-card">
+        <div id="crm-icon-row" class="center">
+            <img  id="crm-icon" src="" alt=""/>
+        </div>
+        <div id="details-row" class="center">
+            <span id="details" class="orange"></span>
+            <span id="lookup"></span>
+        </div>
+        <div id="contact-names-col" class="scroll-enabled"></div>
+        <div id="contact-details-col" class="scroll-enabled">
+            <!-- Redtail CRM -->
+            <h1 class="field">Status: <span id="redtail-status"></span></h1>
+            <h1 class="field">Source: <span id="redtail-source"></span></h1>
+            <h1 class="field">Category: <span id="redtail-category"></span></h1>
+            <h1 class="field">Client Since: <span id="redtail-client-since"></span></h1>
+        </div>
+        <div id="timestamp-row" class="center">
+            <span id="timestamp"></span>
+        </div>
+        <div id="button-row" class="center">
+            <button id="close-button" onclick="hideApp()">Close</button>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Teleworks ScreenPop</title>
+    <title>Teleworks MiniPop</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
@@ -11,6 +11,7 @@
         document.onreadystatechange = (event) => {
             if (document.readyState == "complete") {
                 document.getElementById("close-icon").addEventListener("click", hideApp)
+                document.getElementById("history-icon").addEventListener("click", toggleHistory)
             }
         };
 
@@ -20,6 +21,10 @@
 
         function hideApp() {
             window.electron.send("hide-app");
+        }
+
+        function toggleHistory() {
+            window.electron.send("toggle-history");
         }
 
         function refresh(lookup, fieldsToDisplay) {
@@ -155,7 +160,7 @@
             <div id="titlebar-center">
                 <span id="window-name">CONTACT</span>
             </div>
-            <div id="titlebar-right">
+            <div id="titlebar-right-three">
                 <div class="title-button">
                     <img id="history-icon" src="build/history.svg" alt="Call History"/>
                 </div>
@@ -168,7 +173,7 @@
             </div>
         </div>
     </header>
-    <div id="main">
+    <div id="lookup-card">
         <div id="crm-icon-row" class="center">
             <img  id="crm-icon" src="" alt=""/>
         </div>

@@ -86,7 +86,15 @@ body {
   color: #5eb4e7;
 }
 
-#titlebar-right {
+#titlebar-right-one {
+  display: flex;
+  justify-content: center;
+  width: 20px;
+  margin-right: 5px;
+  -webkit-app-region: no-drag;
+}
+
+#titlebar-right-three {
   display: flex;
   justify-content: space-between;
   width: 80px;
@@ -135,7 +143,7 @@ body {
   height: 16px;
 }
 
-#main {
+#lookup-card {
   border-radius: 0 0 8px 8px;
   height: calc(100% - 31px);
   width: 100%;
