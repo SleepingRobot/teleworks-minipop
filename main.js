@@ -12,12 +12,17 @@ let historyWindow = null
 let settingsWindow = null
 let authWindow = null
 let openWindows = ['screenpop']
-let lookups = []
-let redtailSettings = {
-  auth: {
+let auth = {
+  redtail: {
     name: '',
     id: '',
     key: '',
+  }
+}
+let settings = {
+  lookups: [],
+  redtail: {
+    fieldsToDisplay: ["redtail-status", "redtail-source", "redtail-category"]
   }
 }
 
@@ -49,7 +54,7 @@ async function onAppReady() {
   initWindows()
   //await clearAuth('Redtail')
   await checkKeychainForAuth()
-  await loadLookupHistory()
+  await loadSettings() //TODO: expand to include fieldsToDisplay
   await parseCommandLineArgs()
   attemptPendingLookups()
 }
@@ -136,17 +141,17 @@ async function getEncryptionSecrets() {
   }
 }
 
-// Reads lookup history from encrypted file on disk, if present
+// Reads settings from encrypted file on disk, if present
 // TODO: Add better error handling
-async function loadLookupHistory() {
-  const historyFile = path.resolve('./screenpop.history')
+async function loadSettings() {
+  const settingsFile = path.resolve('./minipop.sec')
   const secrets = await getEncryptionSecrets()
   const decipher = crypto.createDecipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
   try {
-    const input = fs.readFileSync(historyFile)
+    const input = fs.readFileSync(settingsFile)
     const output = Buffer.concat([decipher.update(input), decipher.final()])
     if(output){
-      lookups = JSON.parse(output)
+      settings = JSON.parse(output)
     }
   } catch (err) {
     logErr('Error reading lookup history from disk: ')
@@ -154,17 +159,17 @@ async function loadLookupHistory() {
   }
 }
 
-// Saves lookup history to encrypted file on disk
+// Saves settings to encrypted file on disk
 // TODO: Add better error handling
-async function saveLookupHistory() {
-  const historyFile = path.resolve('./screenpop.history')
+async function saveSettings() {
+  const settingsFile = path.resolve('./minipop.sec')
   const secrets = await getEncryptionSecrets()
   const cipher = crypto.createCipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
-  const output = Buffer.concat([cipher.update(JSON.stringify(lookups)), cipher.final()])
+  const output = Buffer.concat([cipher.update(JSON.stringify(settings)), cipher.final()])
   try {
-    fs.writeFileSync(historyFile, output)
+    fs.writeFileSync(settingsFile, output)
   } catch (err) {
-    logErr('Error writing lookup history to disk: ')
+    logErr('Error writing settings to disk: ')
     logErr(err)
   }
 }
@@ -183,8 +188,8 @@ async function parseCommandLineArgs(argv = null){
 
   // If passed a redtail number, push it to lookups with pending status and update lookup history on disk
   if(redtailLookupNumber) {
-    lookups.unshift(new lookup(Date.now(), 'Redtail', 'Phone', redtailLookupNumber, 'Pending', '', []))
-    await saveLookupHistory()
+    settings.lookups.unshift(new lookup(Date.now(), 'Redtail', 'Phone', redtailLookupNumber, 'Pending', '', []))
+    await saveSettings()
   }
 }
 
@@ -200,13 +205,13 @@ function getCommandLineValue(argv, name) {
 // Attempts to resolve any pending lookups, then refreshes Screenpop and History data
 async function attemptPendingLookups() {
   // Abort if there's no lookups to check
-  if(lookups.length < 1){
+  if(settings.lookups.length < 1){
     logErr("Aborting 'attemptPendingLookups() as lookups array is empty")
     return
   }
 
   // Otherwise attempt to complete any pending lookups
-  const pending = lookups.filter(l => l?.status === 'Pending')
+  const pending = settings.lookups.filter(l => l?.status === 'Pending')
   if(pending.length > 0){
     for (var lookup of pending) {
       if(lookup?.crm === 'Redtail' && lookup?.type === 'Phone' && lookup?.input) {
@@ -216,14 +221,14 @@ async function attemptPendingLookups() {
   }
 
   // Ensure file on disk is updated with latest results
-  await saveLookupHistory()
+  await saveSettings()
 
   // Refresh Screenpop and History windows with latest lookup data
-  if(screenpopWindow && !screenpopWindow.webContents.isLoading()){
-    screenpopWindow.webContents.send('screenpop-data', lookups[lookups.length - 1])
+  if(screenpopWindow && !screenpopWindow.webContents.isLoading() && settings.lookups.length > 0){
+    screenpopWindow.webContents.send('screenpop-data', settings.lookups[0])
   }
   if(historyWindow && !historyWindow.webContents.isLoading()) {
-    historyWindow.webContents.send('history-data', lookups)
+    historyWindow.webContents.send('history-data', settings.lookups)
   }
 }
 
@@ -235,19 +240,19 @@ function lookupRedtailPhone(lookup) {
     logErr(lookup)
   }
 
-  let i = lookups.findIndex(x => x.timestamp == lookup.timestamp)
+  let i = settings.lookups.findIndex(x => x.timestamp == lookup.timestamp)
   if (i < 0) {
     // TODO: Decide best way to handle this scenario, as well. Just add error to log file?
     logErr('Unable to find lookup entry used in Redtail Phone Lookup in lookups array')
     logErr('---lookup:')
     logErr(lookup)
     logErr('---lookups:')
-    logErr(lookups)
+    logErr(settings.lookups)
     return
   }
 
   // If missing Redtail auth key, display credential input modal
-  if(!redtailSettings.auth.key) {
+  if(!auth.redtail.key) {
     openAuthModal('Redtail', 'Enter Redtail credentials to lookup contact.')
     return
   }
@@ -264,7 +269,7 @@ function lookupRedtailPhone(lookup) {
     port: 443,
     path: '/api/public/v1/contacts/search?phone_number=' + parsedNumber 
   })
-  request.setHeader('Authorization', 'Userkeyauth ' + redtailSettings.auth.key)
+  request.setHeader('Authorization', 'Userkeyauth ' + auth.redtail.key)
   request.setHeader('include', 'addresses,phones,emails,urls')
   request.setHeader('Content-Type', 'application/json')
 
@@ -275,14 +280,14 @@ function lookupRedtailPhone(lookup) {
       const resp = JSON.parse(d)
       let matchCount = resp?.contacts?.length
       if (matchCount > 0) {
-        lookups[i].status = 'Success'
-        lookups[i].details = `Redtail returned ${matchCount} contacts matching phone number`
+        settings.lookups[i].status = 'Success'
+        settings.lookups[i].details = `Redtail returned ${matchCount} contacts matching phone number`
         for (var contact of resp.contacts) {
-          lookups[i].results.push(contact)
+          settings.lookups[i].results.push(contact)
         }
       } else {
-        lookups[i].status = 'Success'
-        lookups[i].details = `Redtail returned 0 contacts matching phone number`
+        settings.lookups[i].status = 'Success'
+        settings.lookups[i].details = `Redtail returned 0 contacts matching phone number`
       }
       attemptPendingLookups()
     })
@@ -349,9 +354,9 @@ ipcMain.on('hide-app', async (event) => {
 
 async function clearAuth(crm) {
   if (crm === 'Redtail') {
-    redtailSettings.auth.name = ''
-    redtailSettings.auth.id = ''
-    redtailSettings.auth.key = ''
+    auth.redtail.name = ''
+    auth.redtail.id = ''
+    auth.redtail.key = ''
     await keytar.deletePassword(keytarService, 'redtail-username')
     await keytar.deletePassword(keytarService, 'redtail-userid')
     await keytar.deletePassword(keytarService, 'redtail-userkey')
@@ -405,15 +410,15 @@ function authenticateRedtail(authData, UserkeyToken = '') {
           } else {
             // otherwise, update auth settings in memory and store in OS User's keychain
             if (resp?.Name) {
-              redtailSettings.auth.name = resp.Name
+              auth.redtail.name = resp.Name
               keytar.setPassword(keytarService, 'redtail-username', resp.Name)
             }
             if (resp?.UserID) {
-              redtailSettings.auth.id = resp.UserID.toString()
+              auth.redtail.id = resp.UserID.toString()
               keytar.setPassword(keytarService, 'redtail-userid', resp.UserID.toString())
             }
             if (encodedUserKey) {
-              redtailSettings.auth.key = encodedUserKey
+              auth.redtail.key = encodedUserKey
               keytar.setPassword(keytarService, 'redtail-userkey', encodedUserKey)
             }
             // finally, attempt to resolve any pending lookups and refresh Screenpop + History windows
@@ -432,9 +437,9 @@ function authenticateRedtail(authData, UserkeyToken = '') {
 
 // If any CRM auth settings have been stored in OS User's Keychain, load them into memory
 async function checkKeychainForAuth() {
-  redtailSettings.auth.name = await keytar.getPassword(keytarService, 'redtail-username')
-  redtailSettings.auth.id = await keytar.getPassword(keytarService, 'redtail-userid')
-  redtailSettings.auth.key = await keytar.getPassword(keytarService, 'redtail-userkey')
+  auth.redtail.name = await keytar.getPassword(keytarService, 'redtail-username')
+  auth.redtail.id = await keytar.getPassword(keytarService, 'redtail-userid')
+  auth.redtail.key = await keytar.getPassword(keytarService, 'redtail-userkey')
 }
 
 function logErr(err){
