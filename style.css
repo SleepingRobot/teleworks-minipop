@@ -144,14 +144,24 @@ body {
 }
 
 #lookup-cards {
-  height: 100%;
+  border-radius: 0 0 8px 8px;
+  margin-top: 31px;
+  height: calc(100% - 31px);
   overflow-y: auto;
-  border: 1px solid blue;
+  width: 100%;
+  background-color: #fff;
 }
 
 .lookup-card {
-  height: 300px;
-  border: 1px solid red;
+  height: 267px;
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid #7e7e7e;
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  grid-template-rows: auto;
+  padding: 5px;
 }
 
 #lookup-card-solo {

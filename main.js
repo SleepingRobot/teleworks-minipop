@@ -183,7 +183,7 @@ async function parseCommandLineArgs(argv = null){
 
   // If passed a redtail number, push it to lookups with pending status and update lookup history on disk
   if(redtailLookupNumber) {
-    lookups.push(new lookup(Date.now(), 'Redtail', 'Phone', redtailLookupNumber, 'Pending', '', []))
+    lookups.unshift(new lookup(Date.now(), 'Redtail', 'Phone', redtailLookupNumber, 'Pending', '', []))
     await saveLookupHistory()
   }
 }

@@ -15,135 +15,198 @@
         };
 
         window.electron.receive("history-data", (lookups, fieldsToDisplay = ["redtail-status", "redtail-source", "redtail-category"]) => {
-              refresh(lookup, fieldsToDisplay)
+          console.log("received history data")
+          console.log(lookups)
+          console.log(fieldsToDisplay)    
+          refresh(lookups, fieldsToDisplay)
         });
 
         function toggleHistory() {
             window.electron.send("toggle-history");
         }
 
-        // function refresh(lookup, fieldsToDisplay) {
-        //     clear();
-        //     try {
-        //         if(lookup?.crm) {
-        //             document.getElementById("crm-icon").src = `build/${lookup.crm.toLowerCase()}-icon-small.png`
-        //             document.getElementById("crm-icon").alt = `${lookup.crm} CRM`
-        //             document.getElementById("crm-icon").classList.remove("hidden")
-        //         }
-        //         document.getElementById("details").innerHTML = lookup?.details || "";
-        //         if(lookup.results?.length === 1) {
-        //             document.getElementById("details").classList.add("orange");
-        //         } else {
-        //             document.getElementById("details").classList.add("red");
-        //         }
-        //         document.getElementById("lookup").innerHTML = lookup?.input || "";
+        function refresh(lookups, fieldsToDisplay) {
+          try {
+            let lookupCards = document.getElementById("lookup-cards")
+            lookupCards.innerHTML = "";
+            if(lookups.length > 0) {
+              for (let lookup of lookups) {
+                let card = generateCard(lookup, fieldsToDisplay)
+                lookupCards.appendChild(card)
+              }
+            }
+            } catch (err) {
+                // disregard errors
+                console.log(err)
+            }
+        }
 
-        //         if (lookup?.timestamp){
-        //             let formattedDate = new Date(lookup.timestamp).toLocaleString();
-        //             document.getElementById("timestamp").innerHTML = "Received " + formattedDate || "";
-        //         }
-        //         if(lookup.results?.length > 0) {
-        //             for (const [index, contact] of lookup.results.entries()) {
-        //                 let nameSpan = document.createElement("span");
-        //                 if(index === 0) {
-        //                     nameSpan.classList.add("contact-name-active")
-        //                     setFields(lookup?.crm, contact)
-        //                 } else {
-        //                     nameSpan.classList.add("contact-name-inactive")
-        //                 }
-        //                 if(lookup?.crm === "Redtail") {
-        //                     nameSpan.innerHTML = contact?.full_name || "<MISSING>";
-        //                 }
-        //                 nameSpan.addEventListener("click", (e)=>{changeContact(e, lookup?.crm, contact)})
-        //                 document.getElementById("contact-names-col").appendChild(nameSpan)
-        //             }
-        //         }
-        //     } catch (err) {
-        //         // disregard errors
-        //         console.log(err)
-        //     }
-        //     displayFields(fieldsToDisplay)
-        // }
+        function generateCard(lookup, fieldsToDisplay) {
+            try {
+              let lookupCard = document.createElement("div");
+              lookupCard.classList.add("lookup-card")
+              let results = lookup?.results || []
 
-        // function clear() {
-        //     try {
-        //         document.getElementById("crm-icon").removeAttribute("src")
-        //         document.getElementById("crm-icon").removeAttribute("alt")
-        //         document.getElementById("crm-icon").classList.add("hidden")
-        //         document.getElementById("details").classList.remove("orange");
-        //         document.getElementById("details").innerHTML = "";
-        //         document.getElementById("lookup").innerHTML = "";
-        //         document.getElementById("contact-names-col").innerHTML = "";
-        //         clearFields()
-        //         document.getElementById("timestamp").innerHTML = "";
-        //     } catch(err) {
-        //         console.log(err)
-        //     }
-        // }
+              // crm icon
+              if(lookup?.crm) {
+                  let iconRow = document.createElement("div")
+                  iconRow.classList.add("crm-icon-row", "center")
+                  
+                  let iconImg = document.createElement("img")
+                  iconImg.classList.add("crm-icon")
+                  iconImg.src = `build/${lookup.crm.toLowerCase()}-icon-small.png`
+                  iconImg.alt = `${lookup.crm} CRM`
 
-        // function clearFields() {
-        //     let fields = document.getElementById("contact-details-col").getElementsByTagName("span");
-        //     if(fields.length > 0) {
-        //         for(let field of fields){
-        //             field.innerHTML = "";
-        //         }
-        //     }
-        // }
+                  iconRow.appendChild(iconImg)
+                  lookupCard.appendChild(iconRow)
+              }
 
-        // function setFields(crm, contact) {
-        //     clearFields()
-        //     try {
-        //         if(crm === "Redtail") {
-        //             document.getElementById("redtail-status").innerHTML = contact?.status || "<Missing>";
-        //             document.getElementById("redtail-source").innerHTML = contact?.source || "<Missing>";
-        //             document.getElementById("redtail-category").innerHTML = contact?.category || "<Missing>";
-        //             document.getElementById("redtail-client-since").innerHTML = contact?.client_since || "<Missing>";
-        //         }
-        //     } catch (err) {
-        //         console.log(err)
-        //     }
-        // }
+              // details message
+              if(lookup?.details || lookup?.input){
+                  let detailsRow = document.createElement("div")
+                  detailsRow.classList.add("details-row", "center")
 
-        // // display fields specified in user settings, hide all others
-        // function displayFields(fieldsToDisplay){
-        //     try {
-        //         let labels = document.getElementById("contact-details-col").getElementsByTagName("h1");
-        //         if(labels.length > 0) {
-        //             for(let label of labels){
-        //                 let spans = label.getElementsByTagName("span");
-        //                 if(spans.length > 0){
-        //                     if(fieldsToDisplay.includes(spans[0].id)){
-        //                         //console.log("showing: " + spans[0].id)
-        //                         label.classList.remove("hidden")
-        //                     } else {
-        //                         //console.log("hiding: " + spans[0].id)
-        //                         label.classList.add("hidden")
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     } catch (err) {
-        //         console.log(err)
-        //     }
-        // }
+                  if(lookup?.details){
+                      let detailsSpan = document.createElement("span")
+                      detailsSpan.innerHTML = lookup.details
+                      detailsSpan.classList.add("details",results.length === 1 ? "orange" : "red")
+                      detailsRow.appendChild(detailsSpan)
+                  }
 
-        // function changeContact (event, crm, contact) {
-           
-       
-        //     let contacts = document.getElementById("contact-names-col").getElementsByTagName("span");
-        //     if (contacts?.length > 0 ) {
-        //         for(let c of contacts){
-        //             c.classList.remove("contact-name-active")
-        //             c.classList.remove("contact-name-inactive")
-        //             c.classList.add("contact-name-inactive")
-        //         }
-        //     }
-        //     if(event?.target){
-        //         event.target.classList.remove("contact-name-inactive")
-        //         event.target.classList.add("contact-name-active")
-        //     }
-        //     setFields(crm, contact)
-        // }
+                  if(lookup?.input) {
+                      let lookupBySpan = document.createElement("span")
+                      lookupBySpan.innerHTML = lookup.input
+                      lookupBySpan.classList.add("lookup-by")
+                      detailsRow.appendChild(lookupBySpan)
+                  }
+
+                  lookupCard.appendChild(detailsRow)
+              }
+
+              // contact names and details
+              if(results.length > 0){
+                  let contactNamesDiv = document.createElement("div")
+                  contactNamesDiv.classList.add("contact-names-col","scroll-enabled")
+
+                  let contactDetailsDiv = document.createElement("div")
+                  contactDetailsDiv.classList.add("contact-details-col","scroll-enabled")
+
+                  // Redtail fields
+                  contactDetailsDiv.appendChild(makeField("Status: ","redtail-status"))
+                  contactDetailsDiv.appendChild(makeField("Source: ","redtail-source"))
+                  contactDetailsDiv.appendChild(makeField("Category: ","redtail-category"))
+                  contactDetailsDiv.appendChild(makeField("Client Since: ","redtail-client-since"))
+
+                  for (const [index, contact] of results.entries()) {
+                      let nameSpan = document.createElement("span")
+                      if(index === 0) {
+                          nameSpan.classList.add("contact-name-active")
+                          setFields(lookup?.crm, contact, contactDetailsDiv)
+                      } else {
+                          nameSpan.classList.add("contact-name-inactive")
+                      }
+                      if(lookup?.crm === "Redtail") {
+                          nameSpan.innerHTML = contact?.full_name || "<MISSING>"
+                      }
+                      nameSpan.addEventListener("click", (e)=>{changeContact(e, lookup?.crm, contact, contactNamesDiv, contactDetailsDiv)})
+                      contactNamesDiv.appendChild(nameSpan)
+                  }
+                  displayFields(fieldsToDisplay, contactDetailsDiv)
+                  lookupCard.appendChild(contactNamesDiv)
+                  lookupCard.appendChild(contactDetailsDiv)
+              }
+
+              // timestamp
+              if (lookup?.timestamp){
+                  let timestampRow = document.createElement("div")
+                  timestampRow.classList.add("timestamp-row", "center")
+                  let timestampSpan = document.createElement("span")
+                  timestampSpan.classList.add("timestamp")
+                  let formattedDate = new Date(lookup.timestamp).toLocaleString()
+                  timestampSpan.innerHTML = "Received " + formattedDate;
+
+                  timestampRow.appendChild(timestampSpan)
+                  lookupCard.appendChild(timestampRow)
+              }
+              return lookupCard              
+          } catch (err) {
+              // disregard errors
+              console.log(err)
+          }
+        }
+
+        function makeField(labelText, className){
+            let labelH1 = document.createElement("h1")
+            labelH1.classList.add("field")
+            labelH1.innerHTML = labelText + "<span class='" + className + "'></span>"
+            return labelH1
+        }
+
+        function setFields(crm, contact, detailsDiv) {
+            try {
+                let fields = detailsDiv.getElementsByTagName("span");
+                if(fields.length > 0) {
+                    for(let field of fields){
+                        field.innerHTML = "";
+                    }
+                    for (let field of fields){
+                        if(crm === "Redtail") {
+                            if(field.classList.contains("redtail-status")) { field.innerHTML = contact?.status || "<Missing>"; }
+                            if(field.classList.contains("redtail-source")) { field.innerHTML = contact?.source || "<Missing>"; }
+                            if(field.classList.contains("redtail-category")) { field.innerHTML = contact?.category || "<Missing>"; }
+                            if(field.classList.contains("redtail-client-since")) { field.innerHTML = contact?.client_since || "<Missing>"; }
+                        }
+                    }
+                
+                }
+                
+            } catch (err) {
+                console.log(err)
+            }
+        }
+
+        // display fields specified in user settings, hide all others
+        function displayFields(fieldsToDisplay, detailsDiv){
+            try {
+                let labels = detailsDiv.getElementsByTagName("h1");
+                if(labels.length > 0) {
+                    for(let label of labels){
+                        let spans = label.getElementsByTagName("span");
+                        if(spans.length > 0){
+                            let isWhitelisted = false
+                            for (let f of fieldsToDisplay){
+                                if(spans[0].classList.contains(f)){
+                                    isWhitelisted = true
+                                }
+                            }
+                            if(isWhitelisted){
+                                label.classList.remove("hidden")
+                            } else {
+                                label.classList.add("hidden")
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log(err)
+            }
+        }
+
+        function changeContact (event, crm, contact, namesDiv, detailsDiv) {
+            let contacts = namesDiv.getElementsByTagName("span");
+            if (contacts?.length > 0 ) {
+                for(let c of contacts){
+                    c.classList.remove("contact-name-active")
+                    c.classList.remove("contact-name-inactive")
+                    c.classList.add("contact-name-inactive")
+                }
+            }
+            if(event?.target){
+                event.target.classList.remove("contact-name-inactive")
+                event.target.classList.add("contact-name-active")
+            }
+            setFields(crm, contact, detailsDiv)
+        }
     </script>
 
     <header id="titlebar">
@@ -162,28 +225,6 @@
             </div>
         </div>
     </header>
-    <div id="lookup-card">
-        <div id="crm-icon-row" class="center">
-            <img  id="crm-icon" src="" alt=""/>
-        </div>
-        <div id="details-row" class="center">
-            <span id="details" class="orange"></span>
-            <span id="lookup"></span>
-        </div>
-        <div id="contact-names-col" class="scroll-enabled"></div>
-        <div id="contact-details-col" class="scroll-enabled">
-            <!-- Redtail CRM -->
-            <h1 class="field">Status: <span id="redtail-status"></span></h1>
-            <h1 class="field">Source: <span id="redtail-source"></span></h1>
-            <h1 class="field">Category: <span id="redtail-category"></span></h1>
-            <h1 class="field">Client Since: <span id="redtail-client-since"></span></h1>
-        </div>
-        <div id="timestamp-row" class="center">
-            <span id="timestamp"></span>
-        </div>
-        <div id="button-row" class="center">
-            <button id="close-button" onclick="hideApp()">Close</button>
-        </div>
-    </div>
+    <div id="lookup-cards" class="scroll-enabled"></div>
 </body>
 </html>
