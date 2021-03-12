@@ -88,7 +88,7 @@ function initWindows() {
   screenpopWindow.loadFile('screenpop.html')
   screenpopWindow.on('close', closeToTray)
   //screenpopWindow.webContents.openDevTools()
-  historyWindow = new BrowserWindow({...windowOptions, width:400, height:1200, show:false, parent:screenpopWindow})
+  historyWindow = new BrowserWindow({...windowOptions, width:400, height:600, show:false, parent:screenpopWindow})
   historyWindow.removeMenu()
   historyWindow.loadFile('history.html')
   historyWindow.hide()
