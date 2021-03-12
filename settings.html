@@ -18,9 +18,61 @@
             window.electron.send("toggle-settings");
         }
 
-        window.electron.receive("settings-data", (auth, fieldsToDisplay) => {  
-          // TODO
+        window.electron.receive("settings-data", (auth, fieldsToDisplay) => {
+            refresh(auth, fieldsToDisplay)
         });
+
+        function refresh(auth, fieldsToDisplay){
+            let fields = document.getElementById("settings-fields")
+            fields.innerHTML = ""
+            fields.appendChild(makeField("Type", "redtail-type", fieldsToDisplay))
+            fields.appendChild(makeField("Salutation", "redtail-salutation", fieldsToDisplay))
+            fields.appendChild(makeField("Nickname", "redtail-nickname", fieldsToDisplay))
+            fields.appendChild(makeField("Suffix", "redtail-suffix", fieldsToDisplay))
+            fields.appendChild(makeField("Designation", "redtail-designation", fieldsToDisplay))
+            fields.appendChild(makeField("DOB", "redtail-dob", fieldsToDisplay))
+            fields.appendChild(makeField("Gender", "redtail-gender", fieldsToDisplay))
+            fields.appendChild(makeField("Employer", "redtail-employer", fieldsToDisplay))
+            fields.appendChild(makeField("Job Title", "redtail-job-title", fieldsToDisplay))
+            fields.appendChild(makeField("Category", "redtail-category", fieldsToDisplay))
+            fields.appendChild(makeField("Status", "redtail-status", fieldsToDisplay))
+            fields.appendChild(makeField("Source", "redtail-source", fieldsToDisplay))
+            fields.appendChild(makeField("Referred By", "redtail-referred-by", fieldsToDisplay))
+            fields.appendChild(makeField("Tax ID", "redtail-tax-id", fieldsToDisplay))
+            fields.appendChild(makeField("Marital Status", "redtail-marital-status", fieldsToDisplay))
+            fields.appendChild(makeField("Marital Date", "redtail-marital-date", fieldsToDisplay))
+            fields.appendChild(makeField("Client Since", "redtail-client-since", fieldsToDisplay))
+            fields.appendChild(makeField("Servicing Advisor", "redtail-servicing-advisor", fieldsToDisplay))
+            fields.appendChild(makeField("Writing Advisor", "redtail-writing-advisor", fieldsToDisplay))
+            fields.appendChild(makeField("Email Addresses", "redtail-email-addresses", fieldsToDisplay))
+            fields.appendChild(makeField("Street Addresses", "redtail-street-addresses", fieldsToDisplay))
+            fields.appendChild(makeField("Phone Numbers", "redtail-phone-numbers", fieldsToDisplay))
+        }
+
+        function makeField(labelVal, inputVal, fieldsToDisplay){
+            let isChecked = fieldsToDisplay.includes(inputVal)
+            let field = document.createElement("div")
+            field.classList.add("settings-field", isChecked ? "checked" : "unchecked")
+            let checkbox = document.createElement("input")
+            checkbox.type = "checkbox"
+            checkbox.checked = isChecked
+            checkbox.id = inputVal
+            checkbox.name = inputVal
+            checkbox.value = inputVal
+            checkbox.addEventListener("change", (e) => {toggleField(e, inputVal, field)})
+            let label = document.createElement("label")
+            label.for = inputVal
+            label.innerHTML = labelVal
+            field.appendChild(checkbox)
+            field.appendChild(label)
+            return field
+        }
+
+        function toggleField(event, inputVal, field) {
+            
+        }
+
+        
     </script>
     <header id="titlebar">
         <div id="drag-region">
@@ -50,14 +102,6 @@
             <div id="settings-auth"></div>
             <div class="settings-banner">Display Fields</div>
             <div id="settings-fields" class="scroll-enabled">
-                <div class="settings-field unchecked">
-                    <input type="checkbox" id="redtail-type" name="redtail-type" value="type">
-                    <label for="redtail-type"> Type</label>
-                </div>
-                <div class="settings-field checked">
-                    <input type="checkbox" id="redtail-company" name="redtail-company" value="company_name" checked="checked">
-                    <label for="redtail-company"> Company</label>
-                </div>
             </div>
         </div>
     </div>

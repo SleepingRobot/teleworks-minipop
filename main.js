@@ -150,7 +150,10 @@ async function loadSettings() {
     const output = Buffer.concat([decipher.update(input), decipher.final()])
     if(output){
       settings = JSON.parse(output)
-      settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+      settingsWindow.once('ready-to-show', () => {
+        settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+      })
+      
     }
   } catch (err) {
     logErr('Error reading lookup history from disk: ')
@@ -225,9 +228,6 @@ async function attemptPendingLookups() {
   // Refresh Screenpop and History windows with latest lookup data
   if(screenpopWindow && !screenpopWindow.webContents.isLoading() && settings.lookups.length > 0){
     screenpopWindow.webContents.send('screenpop-data', settings.lookups[0], settings.fieldsToDisplay)
-    console.log(settings.lookups[0].results[0].addresses)
-    console.log(settings.lookups[0].results[0].phones)
-    console.log(settings.lookups[0].results[0].emails)
   }
   if(historyWindow && !historyWindow.webContents.isLoading()) {
     historyWindow.webContents.send('history-data', settings.lookups, settings.fieldsToDisplay)
