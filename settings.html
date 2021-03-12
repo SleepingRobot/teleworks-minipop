@@ -4,29 +4,39 @@
     <meta charset="UTF-8">
     <title>Teleworks ScreenPop</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
-    <style>
-        body {
-            background-color: linen;
-        }
-        
-        h1 {
-            font-size: medium;
-            font-weight: bold;
-        }
-
-        span {
-            font-size: medium;
-            font-weight: normal;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
     <script>
-        //window.electron.send('info-request');
-        window.electron.receive('info-reply', (user) => {
-            document.getElementById('redtailAccount').innerHTML = user || 'UNLINKED';
+        document.onreadystatechange = (event) => {
+            if (document.readyState == "complete") {
+                document.getElementById("close-icon").addEventListener("click", toggleSettings)
+            }
+        };
+
+        function toggleSettings() {
+            window.electron.send("toggle-settings");
+        }
+
+        window.electron.receive("settings-data", (auth, fieldsToDisplay) => {  
+          // TODO
         });
     </script>
-    <h1>Redtail Account: <span id='redtailAccount'></span></h1>
+    <header id="titlebar">
+        <div id="drag-region">
+            <div id="titlebar-left">
+                <img id="app-icon" src="build/icon.png" alt="Teleworks"/>
+                <span id="app-name">MINIP<span class="orange">O</span>P</span>
+            </div>
+            <div id="titlebar-center">
+                <span id="window-name">SETTINGS</span>
+            </div>
+            <div id="titlebar-right-one">
+                <div class="title-button">
+                    <img  id="close-icon" src="build/close.svg" alt="Close to tray"/>
+                </div>
+            </div>
+        </div>
+    </header>
 </body>
 </html>

@@ -12,6 +12,7 @@
             if (document.readyState == "complete") {
                 document.getElementById("close-icon").addEventListener("click", hideApp)
                 document.getElementById("history-icon").addEventListener("click", toggleHistory)
+                document.getElementById("settings-icon").addEventListener("click", toggleSettings)
             }
         };
 
@@ -25,6 +26,10 @@
 
         function toggleHistory() {
             window.electron.send("toggle-history");
+        }
+
+        function toggleSettings() {
+            window.electron.send("toggle-settings");
         }
 
         function refresh(lookup, fieldsToDisplay) {

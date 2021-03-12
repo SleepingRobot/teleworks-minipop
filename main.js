@@ -96,7 +96,7 @@ function initWindows() {
   historyWindow.loadFile('history.html')
   historyWindow.hide()
   //historyWindow.webContents.openDevTools()
-  settingsWindow = new BrowserWindow({...windowOptions, width:800, height:800, show:false, parent:screenpopWindow})
+  settingsWindow = new BrowserWindow({...windowOptions, width:400, height:600, show:false, parent:screenpopWindow})
   settingsWindow.removeMenu()
   settingsWindow.loadFile('settings.html')
   settingsWindow.hide()
@@ -343,6 +343,16 @@ ipcMain.on('toggle-history', async (event) => {
   } else {
     openWindows.push('history')
     historyWindow.show()
+  }
+})
+
+ipcMain.on('toggle-settings', async (event) => {
+  if(openWindows.includes('settings')){
+    openWindows = openWindows.filter(e => e !== 'settings')
+    settingsWindow.hide()
+  } else {
+    openWindows.push('settings')
+    settingsWindow.show()
   }
 })
 
