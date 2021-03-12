@@ -21,9 +21,7 @@ let auth = {
 }
 let settings = {
   lookups: [],
-  redtail: {
-    fieldsToDisplay: ["redtail-status", "redtail-source", "redtail-category"]
-  }
+  fieldsToDisplay: ["redtail-status", "redtail-source", "redtail-category"]
 }
 
 if(isPrimaryInstance) {
@@ -54,7 +52,7 @@ async function onAppReady() {
   initWindows()
   //await clearAuth('Redtail')
   await checkKeychainForAuth()
-  await loadSettings() //TODO: expand to include fieldsToDisplay
+  await loadSettings()
   await parseCommandLineArgs()
   attemptPendingLookups()
 }
@@ -225,10 +223,10 @@ async function attemptPendingLookups() {
 
   // Refresh Screenpop and History windows with latest lookup data
   if(screenpopWindow && !screenpopWindow.webContents.isLoading() && settings.lookups.length > 0){
-    screenpopWindow.webContents.send('screenpop-data', settings.lookups[0])
+    screenpopWindow.webContents.send('screenpop-data', settings.lookups[0], settings.fieldsToDisplay)
   }
   if(historyWindow && !historyWindow.webContents.isLoading()) {
-    historyWindow.webContents.send('history-data', settings.lookups)
+    historyWindow.webContents.send('history-data', settings.lookups, settings.fieldsToDisplay)
   }
 }
 

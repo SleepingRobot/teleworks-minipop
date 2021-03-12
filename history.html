@@ -14,10 +14,7 @@
             }
         };
 
-        window.electron.receive("history-data", (lookups, fieldsToDisplay = ["redtail-status", "redtail-source", "redtail-category"]) => {
-          console.log("received history data")
-          console.log(lookups)
-          console.log(fieldsToDisplay)    
+        window.electron.receive("history-data", (lookups, fieldsToDisplay = []) => {  
           refresh(lookups, fieldsToDisplay)
         });
 

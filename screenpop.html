@@ -15,7 +15,7 @@
             }
         };
 
-        window.electron.receive("screenpop-data", (lookup, fieldsToDisplay = ["redtail-status", "redtail-source", "redtail-category"]) => {
+        window.electron.receive("screenpop-data", (lookup, fieldsToDisplay) => {
               refresh(lookup, fieldsToDisplay)
         });
 
