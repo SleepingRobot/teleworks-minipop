@@ -295,3 +295,114 @@ body {
   border-radius: 5px;
   padding: 2px 7px;
 }
+
+#settings-container {
+  border-radius: 0 0 8px 8px;
+  height: calc(100% - 31px);
+  width: 100%;
+  margin-top: 31px;
+  background-color: #fff;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+#settings-left {
+  grid-column: 1;
+  height: 100%;
+  border-right: 1px solid #7e7e7e;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+
+.settings-crm-active {
+  font-size: large;
+  font-weight: bold;
+  color: #22b1df;
+  width: 100%;
+  background-color: #e2f2f8;
+  cursor: default;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.settings-crm-inactive {
+  font-size: large;
+  font-weight: bold;
+  color: #f2902e;
+  width: 100%;
+  background-color: #e2f2f8;
+  cursor: default;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+#settings-right {
+  grid-column: 2 / span 3;
+  height: 100%;
+  border-left: 1px solid #7e7e7e;
+  display: flex;
+  flex-direction: column;
+}
+
+#settings-logo-row {
+  height: 50px;
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+#settings-logo-img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.settings-banner {
+  height: 50px;
+  width: 100%;
+  background-color: #ebeaeb;
+  font-size: x-large;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+#settings-auth {
+  height: calc(50% - 100px);
+  color: #7e7e7e;
+  font-size: large;
+}
+
+#settings-fields {
+  height: calc(50% - 50px);
+  font-size: medium;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.settings-field {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-direction: row;
+}
+
+.settings-field label {
+  margin-left: 5px;
+}
+
+.settings-field .checked {
+  color: black;
+}
+
+.settings-field .unchecked {
+  color: #b9c9cf;
+}

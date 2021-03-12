@@ -38,5 +38,28 @@
             </div>
         </div>
     </header>
+    <div id="settings-container">
+        <div id="settings-left">
+            <span id="crm-redtail" class="settings-crm-active"><span>Redtail</span></span>
+        </div>
+        <div id="settings-right">
+            <div id="settings-logo-row">
+                <img id="settings-logo-img" src="build/redtail-icon-full.png" alt="Redtail CRM" />
+            </div>
+            <div class="settings-banner">Authentication</div>
+            <div id="settings-auth"></div>
+            <div class="settings-banner">Display Fields</div>
+            <div id="settings-fields" class="scroll-enabled">
+                <div class="settings-field unchecked">
+                    <input type="checkbox" id="redtail-type" name="redtail-type" value="type">
+                    <label for="redtail-type"> Type</label>
+                </div>
+                <div class="settings-field checked">
+                    <input type="checkbox" id="redtail-company" name="redtail-company" value="company_name" checked="checked">
+                    <label for="redtail-company"> Company</label>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
