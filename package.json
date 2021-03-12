@@ -32,7 +32,7 @@
     "appId": "com.electron.teleworks-minipop",
     "win": {
       "target": "portable",
-      "icon": "build/icon.png"
+      "icon": "build/icon-bg.ico"
     }
   }
 }
