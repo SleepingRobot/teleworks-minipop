@@ -9,10 +9,20 @@
 <body>
     <script>
         let authData = {}
+        document.onreadystatechange = (event) => {
+            if (document.readyState == "complete") {
+                document.getElementById("close-icon").addEventListener("click", hideApp)
+            }
+        };
         window.electron.receive('auth-data', (data) => {
             authData = data
             document.getElementById("auth-message").innerHTML = authData?.message || ""
         });
+
+        function hideApp() {
+            window.electron.send("hide-app");
+        }
+        
         function sendForm(event) {
             event.preventDefault() // stop the form from submitting
             let authSubmission = {
@@ -24,6 +34,23 @@
             window.electron.send('auth-submission', authSubmission);
         }
     </script>
+
+    <header id="titlebar">
+        <div id="drag-region">
+            <div id="titlebar-left">
+                <img id="app-icon" src="build/icon.png" alt="Teleworks"/>
+                <span id="app-name">MINIP<span class="orange">O</span>P</span>
+            </div>
+            <div id="titlebar-center">
+                <span id="window-name">AUTHENTICATE</span>
+            </div>
+            <div id="titlebar-right-one">
+                <div class="title-button">
+                    <img  id="close-icon" src="build/close.svg" alt="Close to tray"/>
+                </div>
+            </div>
+        </div>
+    </header>
     <div id="auth-modal-container">
         <div id="auth-modal-subcontainer">
             <div id="auth-crm-logo-row">

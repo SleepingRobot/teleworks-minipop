@@ -50,7 +50,7 @@ app.on('ready', () => setTimeout(onAppReady, 500));
 async function onAppReady() {
   initTrayIcon()
   initWindows()
-  //await clearAuth('Redtail')
+  await clearAuth('Redtail')
   await checkKeychainForAuth()
   await loadSettings()
   await parseCommandLineArgs()
@@ -73,6 +73,8 @@ function initWindows() {
   const windowOptions = {
     transparent: true, 
     frame: false,
+    minWidth: 400,
+    minHeight: 300,
     webPreferences: {
       allowRunningInsecureContent: false,
       contextIsolation: true,
@@ -87,7 +89,7 @@ function initWindows() {
     e.preventDefault()
     hideApp()
   }
-  screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:300})
+  screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:300, maxWidth:400, resizable:false, maxHeight:300})
   screenpopWindow.removeMenu()
   screenpopWindow.loadFile('screenpop.html')
   screenpopWindow.on('close', closeToTray)
@@ -102,7 +104,7 @@ function initWindows() {
   settingsWindow.loadFile('settings.html')
   settingsWindow.hide()
   //settingsWindow.webContents.openDevTools()
-  authWindow = new BrowserWindow({...windowOptions, width:400, height:250, show:false, parent:screenpopWindow, frame:true})
+  authWindow = new BrowserWindow({...windowOptions, width:400, height:300, maxWidth:400, maxHeight:300, resizable:false, show:false, parent:screenpopWindow})
   authWindow.removeMenu()
   authWindow.loadFile('auth.html')
   authWindow.on('close', closeToTray)

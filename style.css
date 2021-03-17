@@ -409,8 +409,9 @@ body {
 
 #auth-modal-container {
   border-radius: 0 0 8px 8px;
-  height: 100%;
+  height: calc(100% - 31px);
   width: 100%;
+  margin-top: 31px;
   background-color: #fff;
   flex-direction: column;
   justify-content: center;
