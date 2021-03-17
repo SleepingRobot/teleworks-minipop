@@ -22,7 +22,7 @@
         function hideApp() {
             window.electron.send("hide-app");
         }
-        
+
         function sendForm(event) {
             event.preventDefault() // stop the form from submitting
             let authSubmission = {
@@ -66,7 +66,7 @@
                 <br>
                 <input class="auth-input" id="api-key" name="apiKey" type="text" placeholder="API Key">
                 <br>
-                <input class="bottom-button" id="auth-submit" type="submit" value="Submit">
+                <input class="bottom-button auth-submit" type="submit" value="LOG IN">
             </form>
         </div>
     </div>

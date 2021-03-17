@@ -378,6 +378,47 @@ body {
   height: calc(50% - 100px);
   color: #7e7e7e;
   font-size: large;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 5px;
+}
+
+.settings-auth-form {
+  height: 75%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.settings-auth-input {
+  width: 90%;
+  height: 30px;
+  border: 1px solid #7e7e7e;
+  padding: 1px;
+  text-align: center;
+}
+
+.settings-auth-logout {
+  width: 120px;
+  height: 30px;
+  background-color: #ff8989;
+  color: white;
+}
+
+.settings-auth-login {
+  width: 120px;
+  height: 30px;
+  background-color: #22b1df;
+  color: white;
+}
+
+.logout-button {
+  background-color: #ff8989;
+  color: white;
 }
 
 #settings-fields {
@@ -472,7 +513,7 @@ body {
   text-align: center;
 }
 
-#auth-submit {
+.auth-submit {
   width: 25%;
   height: 30px;
   background-color: #22b1df;

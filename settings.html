@@ -19,25 +19,79 @@
         }
 
         window.electron.receive("settings-data", (auth, fieldsToDisplay) => {
+            console.log("refreshing")
+            console.log(auth)
             refresh(auth, fieldsToDisplay)
         });
+
+        function logout(){
+            console.log("logging out!")
+            window.electron.send("crm-logout", "Redtail")
+        }
+
+        function submitAuth(e, user, pw, key) {
+            e.preventDefault() // stop the form from submitting
+            let authData = {
+                crm: "Redtail",
+                username: user,
+                password: pw,
+                apiKey: key
+            }
+            window.electron.send("crm-login", authData)
+        }
 
         function refresh(auth, fieldsToDisplay){
             let authContainer = document.getElementById("settings-auth")
             authContainer.innerHTML = ""
-            if(auth.redtail?.key && (auth.redtail.name || auth.redtail.id)) {
-                let loggedIn = document.createElement("p")
+            if(auth.redtail?.key) {
+                let loggedIn = document.createElement("div")
                 let uName = auth.redtail?.name || "<Missing Name>"
                 let uId = auth.redtail?.id || "<Missing ID>"
-                loggedin.innerHTML = "Logged in as: " + uName + " (" + uId + ")"
+                loggedIn.innerHTML = "Logged in as: " + uName + " (" + uId + ")"
 
                 let logoutButton = document.createElement("button")
-                logoutButton.classList.add("bottom-button")
-                logoutButton.onclick = hideApp
-                logoutButton.innerHTML = "LOGOUT"
+                logoutButton.classList.add("bottom-button", "settings-auth-logout")
+                logoutButton.onclick = logout
+                logoutButton.innerHTML = "LOG OUT"
 
-                authContainer.appendChild(loggedin)
+                authContainer.appendChild(loggedIn)
+                authContainer.appendChild(document.createElement("br"))
                 authContainer.appendChild(logoutButton)
+            } else {
+                let loginForm = document.createElement("form")
+                loginForm.name = "redtailSettingsAuthForm"
+                loginForm.classList.add("settings-auth-form")
+
+                let usernameInput = document.createElement("input")
+                usernameInput.classList.add("settings-auth-input")
+                usernameInput.name = "username"
+                usernameInput.type = "text"
+                usernameInput.placeholder = "Username"
+
+                let passwordInput = document.createElement("input")
+                passwordInput.classList.add("settings-auth-input")
+                passwordInput.name = "password"
+                passwordInput.type = "password"
+                passwordInput.placeholder = "Password"
+
+                let apikeyInput = document.createElement("input")
+                apikeyInput.classList.add("settings-auth-input")
+                apikeyInput.name = "api-key"
+                apikeyInput.type = "text"
+                apikeyInput.placeholder = "API Key"
+
+                let submitButton = document.createElement("input")
+                submitButton.classList.add("bottom-button", "settings-auth-login")
+                submitButton.type = "submit"
+                submitButton.value = "LOG IN"
+
+                loginForm.onsubmit = (e)=>{submitAuth(e, usernameInput.value, passwordInput.value, apikeyInput.value)}
+
+                loginForm.appendChild(usernameInput)
+                loginForm.appendChild(passwordInput)
+                loginForm.appendChild(apikeyInput)
+                loginForm.appendChild(submitButton)
+                authContainer.appendChild(loginForm)
             }
 
             let fields = document.getElementById("settings-fields")

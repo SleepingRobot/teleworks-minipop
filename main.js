@@ -50,7 +50,7 @@ app.on('ready', () => setTimeout(onAppReady, 500));
 async function onAppReady() {
   initTrayIcon()
   initWindows()
-  await clearAuth('Redtail')
+  //await clearAuth('Redtail')
   await checkKeychainForAuth()
   await loadSettings()
   await parseCommandLineArgs()
@@ -343,6 +343,23 @@ ipcMain.on('auth-submission', async (event, authData) => {
   }
 })
 
+// logout of CRM via settings window
+ipcMain.on('crm-logout', async (event, crm) => {
+  await clearAuth(crm)
+  settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+})
+
+// login to CRM via settings window
+ipcMain.on('crm-login', async (event, authData) => {
+  // Clear old auth settings
+  await clearAuth(authData.crm)
+
+  // ... and validate new auth credentials
+  if (authData?.crm === 'Redtail') {
+    authenticateRedtail(authData)
+  }
+})
+
 ipcMain.on('toggle-history', async (event) => {
   if(openWindows.includes('history')){
     openWindows = openWindows.filter(e => e !== 'history')
@@ -436,7 +453,8 @@ function authenticateRedtail(authData, UserkeyToken = '') {
               auth.redtail.key = encodedUserKey
               keytar.setPassword(keytarService, 'redtail-userkey', encodedUserKey)
             }
-            // finally, attempt to resolve any pending lookups and refresh Screenpop + History windows
+            // finally, attempt to resolve any pending lookups and refresh Screenpop + History + Settings windows
+            settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
             attemptPendingLookups()
           }
         }
