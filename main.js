@@ -79,6 +79,7 @@ function initWindows() {
       enableRemoteModule: false,
       nodeIntegration: false,
       sandbox: true,
+      affinity: 'minipopUI',
       preload: `${__dirname}/preload.js`
     }
   }

@@ -23,6 +23,23 @@
         });
 
         function refresh(auth, fieldsToDisplay){
+            let authContainer = document.getElementById("settings-auth")
+            authContainer.innerHTML = ""
+            if(auth.redtail?.key && (auth.redtail.name || auth.redtail.id)) {
+                let loggedIn = document.createElement("p")
+                let uName = auth.redtail?.name || "<Missing Name>"
+                let uId = auth.redtail?.id || "<Missing ID>"
+                loggedin.innerHTML = "Logged in as: " + uName + " (" + uId + ")"
+
+                let logoutButton = document.createElement("button")
+                logoutButton.classList.add("bottom-button")
+                logoutButton.onclick = hideApp
+                logoutButton.innerHTML = "LOGOUT"
+
+                authContainer.appendChild(loggedin)
+                authContainer.appendChild(logoutButton)
+            }
+
             let fields = document.getElementById("settings-fields")
             fields.innerHTML = ""
             fields.appendChild(makeField("Type", "redtail-type", fieldsToDisplay))

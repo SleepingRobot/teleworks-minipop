@@ -4,28 +4,14 @@
     <meta charset="UTF-8">
     <title>Teleworks ScreenPop</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
-    <style>
-        body {
-            background-color: linen;
-        }
-        
-        h1 {
-            font-size: medium;
-            font-weight: bold;
-        }
-
-        span {
-            font-size: medium;
-            font-weight: normal;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
     <script>
-        //document.querySelector("title").innerHTML ="";
         let authData = {}
         window.electron.receive('auth-data', (data) => {
             authData = data
+            document.getElementById("auth-message").innerHTML = authData?.message || ""
         });
         function sendForm(event) {
             event.preventDefault() // stop the form from submitting
@@ -33,28 +19,29 @@
                 crm: authData?.crm,
                 username: document.getElementById("username").value,
                 password: document.getElementById("password").value,
-                apiKey: document.getElementById("apiKey").value
+                apiKey: document.getElementById("api-key").value
             }
             window.electron.send('auth-submission', authSubmission);
         }
     </script>
-
-    <h1 id='message'></h1>
-    <form name="redtailAuthForm" onSubmit="JavaScript:sendForm(event)">
-        Redtail Username:
-        <br>
-        <input id="username" name="username" type="text">
-        <br>
-        Redtail Password:
-        <br>
-        <input id="password" name="password" type="password">
-        <br>
-        Redtail API Key:
-        <br>
-        <input id="apiKey" name="apiKey" type="text">
-        <br>
-        <br>
-        <input type="submit" value="Submit">
-    </form>
+    <div id="auth-modal-container">
+        <div id="auth-modal-subcontainer">
+            <div id="auth-crm-logo-row">
+                <img id="auth-crm-logo" src="build/redtail-icon-full.png" alt="Redtail CRM" />
+            </div>
+            <div id="auth-message-row">
+                <div id="auth-message"></div>
+            </div>
+            <form name="redtailAuthForm" onSubmit="JavaScript:sendForm(event)">
+                <input class="auth-input" id="username" name="username" type="text" placeholder="Username">
+                <br>
+                <input class="auth-input" id="password" name="password" type="password" placeholder="Password">
+                <br>
+                <input class="auth-input" id="api-key" name="apiKey" type="text" placeholder="API Key">
+                <br>
+                <input class="bottom-button" id="auth-submit" type="submit" value="Submit">
+            </form>
+        </div>
+    </div>
 </body>
 </html>
