@@ -186,9 +186,48 @@
                             if(field.classList.contains("redtail-client-since")) { field.innerHTML = contact?.client_since || "<Missing>"; }
                             if(field.classList.contains("redtail-servicing-advisor")) { field.innerHTML = contact?.servicing_advisor || "<Missing>"; }
                             if(field.classList.contains("redtail-writing-advisor")) { field.innerHTML = contact?.writing_advisor || "<Missing>"; }
-                            if(field.classList.contains("redtail-email-addresses")) { field.innerHTML = "<Missing>"; }
-                            if(field.classList.contains("redtail-street-addresses")) { field.innerHTML = "<Missing>"; }
-                            if(field.classList.contains("redtail-phone-numbers")) { field.innerHTML = "<Missing>"; }
+                            let emailAddresses = ""
+                            if(contact.emails?.length > 0) {
+                                for(let e of contact.emails) {
+                                    if (e?.address) {
+                                        if(emailAddresses) {
+                                            emailAddresses += "; " + e.address
+                                        } else {
+                                            emailAddresses = e.address
+                                        }
+                                    }
+                                }
+                            }
+                            if(field.classList.contains("redtail-email-addresses")) { field.innerHTML = emailAddresses || "<Missing>"; }
+                            let streetAddresses = ""
+                            if(contact.addresses?.length > 0) {
+                                for(let a of contact.addresses) {
+                                    let streetAddress = a?.street_address || ""
+                                    streetAddress += a.secondary_address ? " " + a.secondary_address : ""
+                                    streetAddress += a.city ? " " + a.city : ""
+                                    streetAddress += a.state ? " " + a.state : ""
+                                    streetAddress += a.zip ? " " + a.zip : ""
+                                    if(streetAddresses) {
+                                        streetAddresses += "; " + streetAddress
+                                    } else {
+                                        streetAddresses = streetAddress
+                                    }
+                                }
+                            }
+                            if(field.classList.contains("redtail-street-addresses")) { field.innerHTML = streetAddresses || "<Missing>"; }
+                            let phoneNumbers = ""
+                            if(contact.phones?.length > 0) {
+                                for(let p of contact.phones) {
+                                    if (p?.number) {
+                                        if(phoneNumbers) {
+                                            phoneNumbers += "; " + p.number
+                                        } else {
+                                            phoneNumbers = p.number
+                                        }
+                                    }
+                                }
+                            }
+                            if(field.classList.contains("redtail-phone-numbers")) { field.innerHTML = phoneNumbers || "<Missing>"; }
                         }
                     }
                 

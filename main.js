@@ -89,7 +89,7 @@ function initWindows() {
     e.preventDefault()
     hideApp()
   }
-  screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:300, maxWidth:400, resizable:false, maxHeight:300})
+  screenpopWindow = new BrowserWindow({...windowOptions, width:400, height:300})
   screenpopWindow.removeMenu()
   screenpopWindow.loadFile('screenpop.html')
   screenpopWindow.on('close', closeToTray)
