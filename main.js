@@ -308,23 +308,35 @@ function parseNumber (n) {
 
 
 function openAuthModal(crm, message = null) {
+  // If History or Settings are open, close them
+  
+  openWindows = openWindows.filter(e => e !== 'settings')
+  openWindows = openWindows.filter(e => e !== 'history')
+  if (!settingsWindow.webContents.isLoading()) settingsWindow.hide()
+  if (!historyWindow.webContents.isLoading()) historyWindow.hide()
+
+
   if (!message) {
     message = `Enter ${crm} Account Credentials.`
   }
   
   const authData = {crm: crm, message: message }
 
-  if (authWindow) {
-    authWindow.webContents.on('did-finish-load', ()=>{
-      authWindow.webContents.send('auth-data', authData)
-    })
+  if (!authWindow.webContents.isLoading()) {
+    sendAuthModalData(authData)
+  } else {
     authWindow.once('ready-to-show', () => {
-      authWindow.show()
-      if(!openWindows.includes('auth')) openWindows.push('auth')
-      screenpopWindow.hide()
-      openWindows = openWindows.filter(e => e !== 'screenpop')
+      sendAuthModalData(authData)
     })
   }
+}
+
+function sendAuthModalData(authData){
+  authWindow.webContents.send('auth-data', authData)
+  authWindow.show()
+  if(!openWindows.includes('auth')) openWindows.push('auth')
+  screenpopWindow.hide()
+  openWindows = openWindows.filter(e => e !== 'screenpop')
 }
 
 ipcMain.on('auth-submission', async (event, authData) => {
@@ -389,6 +401,7 @@ async function clearAuth(crm) {
     auth.redtail.name = ''
     auth.redtail.id = ''
     auth.redtail.key = ''
+    auth.redtail.msg = ''
     await keytar.deletePassword(keytarService, 'redtail-username')
     await keytar.deletePassword(keytarService, 'redtail-userid')
     await keytar.deletePassword(keytarService, 'redtail-userkey')
@@ -441,6 +454,7 @@ function authenticateRedtail(authData, UserkeyToken = '') {
             authenticateRedtail(authData, encodedUserKey)
           } else {
             // otherwise, update auth settings in memory and store in OS User's keychain
+            auth.redtail.msg = ''
             if (resp?.Name) {
               auth.redtail.name = resp.Name
               keytar.setPassword(keytarService, 'redtail-username', resp.Name)
@@ -460,9 +474,21 @@ function authenticateRedtail(authData, UserkeyToken = '') {
         }
       })
     } else if(response?.statusCode >= 400 && response?.statusCode < 500) {
-      openAuthModal('Redtail', `Stored Redtail authentication rejected by Redtail API as invalid (HTTP ERR ${response.statusCode.toString()}). Please re-enter credentials to try again.`)
+      clearAuth("Redtail")
+      auth.redtail.msg = `Credentials rejected by Redtail (HTTP ERR ${response.statusCode.toString()}). Please try again.`
+      if(authData?.inputMethod == "modal"){
+        openAuthModal('Redtail', `Credentials rejected by Redtail (HTTP ERR ${response.statusCode.toString()}). Please try again.`)
+      } else if(authData?.inputMethod == "settings") {
+        settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+      }
     } else {
-      openAuthModal('Redtail', `Error validating with Redtail API (HTTP ERR ${response.statusCode.toString()}). Please re-enter credentials to try again.`)
+      clearAuth("Redtail")
+      auth.redtail.msg = `Error validating credentials (HTTP ERR ${response.statusCode.toString()}). Please try again.`
+      if(authData?.inputMethod == "modal"){
+        openAuthModal('Redtail', `Error validating credentials (HTTP ERR ${response.statusCode.toString()}). Please try again.`)
+      } else if(authData?.inputMethod == "settings") {
+        settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+      }
     }
   })
   request.end()

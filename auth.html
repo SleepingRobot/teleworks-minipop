@@ -16,7 +16,7 @@
         };
         window.electron.receive('auth-data', (data) => {
             authData = data
-            document.getElementById("auth-message").innerHTML = authData?.message || ""
+            document.getElementsByClassName("auth-message")[0].innerHTML = authData?.message || ""
         });
 
         function hideApp() {
@@ -29,9 +29,13 @@
                 crm: authData?.crm,
                 username: document.getElementById("username").value,
                 password: document.getElementById("password").value,
-                apiKey: document.getElementById("api-key").value
+                apiKey: document.getElementById("api-key").value,
+                inputMethod: "modal"
             }
             window.electron.send('auth-submission', authSubmission);
+            document.getElementById("username").value = ""
+            document.getElementById("password").value = ""
+            document.getElementById("api-key").value = ""
         }
     </script>
 
@@ -56,8 +60,8 @@
             <div id="auth-crm-logo-row">
                 <img id="auth-crm-logo" src="build/redtail-icon-full.png" alt="Redtail CRM" />
             </div>
-            <div id="auth-message-row">
-                <div id="auth-message"></div>
+            <div class="auth-message-row">
+                <div class="auth-message"></div>
             </div>
             <form name="redtailAuthForm" onSubmit="JavaScript:sendForm(event)">
                 <input class="auth-input" id="username" name="username" type="text" placeholder="Username">

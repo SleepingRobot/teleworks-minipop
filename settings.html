@@ -35,7 +35,8 @@
                 crm: "Redtail",
                 username: user,
                 password: pw,
-                apiKey: key
+                apiKey: key,
+                inputMethod: "settings"
             }
             window.electron.send("crm-login", authData)
         }
@@ -61,6 +62,17 @@
                 let loginForm = document.createElement("form")
                 loginForm.name = "redtailSettingsAuthForm"
                 loginForm.classList.add("settings-auth-form")
+
+                if(auth.redtail?.msg){
+                    let messageRowDiv = document.createElement("div")
+                    messageRowDiv.classList.add("auth-message-row")
+                    let messageDiv = document.createElement("div")
+                    messageDiv.classList.add("auth-message")
+                    messageDiv.innerHTML = auth.redtail.msg
+
+                    messageRowDiv.appendChild(messageDiv)
+                    loginForm.appendChild(messageRowDiv)
+                }
 
                 let usernameInput = document.createElement("input")
                 usernameInput.classList.add("settings-auth-input")

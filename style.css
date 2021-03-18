@@ -394,6 +394,12 @@ body {
   align-items: center;
 }
 
+.settings-auth-message-row {
+}
+
+.settings-auth-message {
+}
+
 .settings-auth-input {
   width: 90%;
   height: 30px;
@@ -464,7 +470,7 @@ body {
   width: 100%;
 }
 
-#auth-message-row {
+.auth-message-row {
   width: 100%;
   height: 30px;
   display: flex;
@@ -472,7 +478,7 @@ body {
   align-items: center;
 }
 
-#auth-message {
+.auth-message {
   width: auto;
   margin: 0 auto;
   height: 100%;
