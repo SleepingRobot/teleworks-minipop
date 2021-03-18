@@ -372,6 +372,29 @@ ipcMain.on('crm-login', async (event, authData) => {
   }
 })
 
+
+ipcMain.on('toggle-displayfield', async (event, fieldData) => {
+  // return if input is missing
+  if(!fieldData?.input) return
+
+  if(fieldData?.action === "add" && !settings.fieldsToDisplay.includes(fieldData.input)) {
+    settings.fieldsToDisplay.push(fieldData.input)
+  } else if (fieldData?.action === "remove") {
+    settings.fieldsToDisplay = settings.fieldsToDisplay.filter(e => e !== fieldData.input)
+  }
+
+  // save changes to disk
+  saveSettings()
+
+   // Refresh Screenpop and History windows with latest display field data
+  if(screenpopWindow && !screenpopWindow.webContents.isLoading() && settings.lookups.length > 0){
+    screenpopWindow.webContents.send('screenpop-data', settings.lookups[0], settings.fieldsToDisplay)
+  }
+  if(historyWindow && !historyWindow.webContents.isLoading()) {
+    historyWindow.webContents.send('history-data', settings.lookups, settings.fieldsToDisplay)
+  }
+})
+
 ipcMain.on('toggle-history', async (event) => {
   if(openWindows.includes('history')){
     openWindows = openWindows.filter(e => e !== 'history')

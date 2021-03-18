@@ -41,6 +41,16 @@
             window.electron.send("crm-login", authData)
         }
 
+        function toggleField(event, labelVal, inputVal) {
+            console.log(event)
+            let fieldData = {
+                action: event.target?.checked ? "add" : "remove",
+                label: labelVal,
+                input: inputVal
+            }
+           window.electron.send("toggle-displayfield", fieldData)
+        }
+
         function refresh(auth, fieldsToDisplay){
             let authContainer = document.getElementById("settings-auth")
             authContainer.innerHTML = ""
@@ -142,7 +152,7 @@
             checkbox.id = inputVal
             checkbox.name = inputVal
             checkbox.value = inputVal
-            checkbox.addEventListener("change", (e) => {toggleField(e, inputVal, field)})
+            checkbox.addEventListener("change", (e) => {toggleField(e, labelVal, inputVal)})
             let label = document.createElement("label")
             label.for = inputVal
             label.innerHTML = labelVal
@@ -150,12 +160,6 @@
             field.appendChild(label)
             return field
         }
-
-        function toggleField(event, inputVal, field) {
-            
-        }
-
-        
     </script>
     <header id="titlebar">
         <div id="drag-region">

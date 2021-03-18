@@ -85,10 +85,30 @@
                     contactDetailsDiv.classList.add("contact-details-col","scroll-enabled")
 
                     // Redtail fields
-                    contactDetailsDiv.appendChild(makeField("Status: ","redtail-status"))
-                    contactDetailsDiv.appendChild(makeField("Source: ","redtail-source"))
-                    contactDetailsDiv.appendChild(makeField("Category: ","redtail-category"))
-                    contactDetailsDiv.appendChild(makeField("Client Since: ","redtail-client-since"))
+                    contactDetailsDiv.appendChild(makeField("Type: ", "redtail-type"))
+                    contactDetailsDiv.appendChild(makeField("Salutation: ", "redtail-salutation"))
+                    contactDetailsDiv.appendChild(makeField("Nickname: ", "redtail-nickname"))
+                    contactDetailsDiv.appendChild(makeField("Suffix: ", "redtail-suffix"))
+                    contactDetailsDiv.appendChild(makeField("Designation: ", "redtail-designation"))
+                    contactDetailsDiv.appendChild(makeField("DOB: ", "redtail-dob"))
+                    contactDetailsDiv.appendChild(makeField("Gender: ", "redtail-gender"))
+                    contactDetailsDiv.appendChild(makeField("Employer: ", "redtail-employer"))
+                    contactDetailsDiv.appendChild(makeField("Job Title: ", "redtail-job-title"))
+                    contactDetailsDiv.appendChild(makeField("Category: ", "redtail-category"))
+                    contactDetailsDiv.appendChild(makeField("Status: ", "redtail-status"))
+                    contactDetailsDiv.appendChild(makeField("Source: ", "redtail-source"))
+                    contactDetailsDiv.appendChild(makeField("Referred By: ", "redtail-referred-by"))
+                    contactDetailsDiv.appendChild(makeField("Tax ID: ", "redtail-tax-id"))
+                    contactDetailsDiv.appendChild(makeField("Marital Status: ", "redtail-marital-status"))
+                    contactDetailsDiv.appendChild(makeField("Marital Date: ", "redtail-marital-date"))
+                    contactDetailsDiv.appendChild(makeField("Client Since: ", "redtail-client-since"))
+                    contactDetailsDiv.appendChild(makeField("Servicing Advisor: ", "redtail-servicing-advisor"))
+                    contactDetailsDiv.appendChild(makeField("Writing Advisor: ", "redtail-writing-advisor"))
+                    contactDetailsDiv.appendChild(makeField("Email Addresses: ", "redtail-email-addresses"))
+                    contactDetailsDiv.appendChild(makeField("Street Addresses: ", "redtail-street-addresses"))
+                    contactDetailsDiv.appendChild(makeField("Phone Numbers: ", "redtail-phone-numbers"))
+
+
 
                     for (const [index, contact] of results.entries()) {
                         let nameSpan = document.createElement("span")
@@ -153,10 +173,28 @@
                     }
                     for (let field of fields){
                         if(crm === "Redtail") {
+                            if(field.classList.contains("redtail-type")) { field.innerHTML = contact?.type || "<Missing>"; }
+                            if(field.classList.contains("redtail-salutation")) { field.innerHTML = contact?.salutation || "<Missing>"; }
+                            if(field.classList.contains("redtail-nickname")) { field.innerHTML = contact?.nickname || "<Missing>"; }
+                            if(field.classList.contains("redtail-suffix")) { field.innerHTML = contact?.suffix || "<Missing>"; }
+                            if(field.classList.contains("redtail-designation")) { field.innerHTML = contact?.designation || "<Missing>"; }
+                            if(field.classList.contains("redtail-dob")) { field.innerHTML = contact?.dob || "<Missing>"; }
+                            if(field.classList.contains("redtail-gender")) { field.innerHTML = contact?.gender || "<Missing>"; }
+                            if(field.classList.contains("redtail-employer")) { field.innerHTML = contact?.employer || "<Missing>"; }
+                            if(field.classList.contains("redtail-job-title")) { field.innerHTML = contact?.job_title || "<Missing>"; }
+                            if(field.classList.contains("redtail-category")) { field.innerHTML = contact?.category || "<Missing>"; }
                             if(field.classList.contains("redtail-status")) { field.innerHTML = contact?.status || "<Missing>"; }
                             if(field.classList.contains("redtail-source")) { field.innerHTML = contact?.source || "<Missing>"; }
-                            if(field.classList.contains("redtail-category")) { field.innerHTML = contact?.category || "<Missing>"; }
+                            if(field.classList.contains("redtail-referred-by")) { field.innerHTML = contact?.referred_by || "<Missing>"; }
+                            if(field.classList.contains("redtail-tax-id")) { field.innerHTML = contact?.tax_id || "<Missing>"; }
+                            if(field.classList.contains("redtail-marital-status")) { field.innerHTML = contact?.marital_status || "<Missing>"; }
+                            if(field.classList.contains("redtail-marital-date")) { field.innerHTML = contact?.marital_date || "<Missing>"; }
                             if(field.classList.contains("redtail-client-since")) { field.innerHTML = contact?.client_since || "<Missing>"; }
+                            if(field.classList.contains("redtail-servicing-advisor")) { field.innerHTML = contact?.servicing_advisor || "<Missing>"; }
+                            if(field.classList.contains("redtail-writing-advisor")) { field.innerHTML = contact?.writing_advisor || "<Missing>"; }
+                            if(field.classList.contains("redtail-email-addresses")) { field.innerHTML = "<Missing>"; }
+                            if(field.classList.contains("redtail-street-addresses")) { field.innerHTML = "<Missing>"; }
+                            if(field.classList.contains("redtail-phone-numbers")) { field.innerHTML = "<Missing>"; }
                         }
                     }
                 
