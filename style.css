@@ -428,7 +428,7 @@ body {
 }
 
 #settings-fields {
-  height: calc(50% - 50px);
+  height: 225px;
   font-size: medium;
   display: flex;
   flex-direction: column;
