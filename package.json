@@ -11,28 +11,35 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SleepingRobot/zac-screen-pop.git"
+    "url": "git+https://github.com/SleepingRobot/teleworks-minipop.git"
   },
   "keywords": [],
   "author": "LinkPoint Solutions",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/SleepingRobot/zac-screen-pop/issues"
+    "url": "https://github.com/SleepingRobot/teleworks-minipop/issues"
   },
-  "homepage": "https://github.com/SleepingRobot/zac-screen-pop#readme",
+  "homepage": "https://github.com/SleepingRobot/teleworks-minipop#readme",
   "devDependencies": {
     "electron": "^11.3.0",
     "electron-builder": "^22.9.1"
   },
   "dependencies": {
-    "electron-is-dev": "^1.2.0",
+    "electron-unhandled": "^3.0.2",
     "keytar": "^7.4.0"
   },
   "build": {
+    "productName": "Teleworks MiniPop",
     "appId": "com.electron.teleworks-minipop",
     "win": {
       "target": "portable",
-      "icon": "build/icon-bg.ico"
-    }
+      "icon": "build/icon.ico"
+    },
+    "files": [
+      "**/*",
+      "build/*.*",
+      "build/icon.*"
+    ],
+    "extraResources": ["./extraResources/**"]
   }
 }

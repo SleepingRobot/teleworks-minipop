@@ -8,11 +8,19 @@
 </head>
 <body>
     <script>
-        document.onreadystatechange = (event) => {
-            if (document.readyState == "complete") {
-                document.getElementById("close-icon").addEventListener("click", toggleHistory)
-            }
-        };
+        let imgPaths = {
+            app: '',
+            history: '',
+            settings: '',
+            close: '',
+            redtailSmall: '',
+            redtailFull: ''
+        }
+
+        window.electron.receive('image-paths', (p) => {
+            imgPaths = p
+            refreshImages()
+        });
 
         window.electron.receive("history-data", (lookups, fieldsToDisplay = []) => {  
           refresh(lookups, fieldsToDisplay)
@@ -23,7 +31,6 @@
         }
 
         function refresh(lookups, fieldsToDisplay) {
-          try {
             let lookupCards = document.getElementById("lookup-cards")
             lookupCards.innerHTML = "";
             if(lookups.length > 0) {
@@ -32,123 +39,152 @@
                 lookupCards.appendChild(card)
               }
             }
-            } catch (err) {
-                // disregard errors
-                console.log(err)
+        }
+
+        function refreshImages() {
+            let titleLeft = document.getElementById("titlebar-left")
+            titleLeft.innerHTML = ""
+
+            let appIcon = document.createElement("img")
+            appIcon.id = "app-icon"
+            appIcon.alt = "Teleworks MiniPop"
+            appIcon.src = imgPaths.app
+
+            let appName = document.createElement("span")
+            appName.id = "app-name"
+            appName.innerHTML = 'MINIP<span class="orange">O</span>P'
+
+            titleLeft.appendChild(appIcon)
+            titleLeft.appendChild(appName)
+
+
+            let titleRight = document.getElementById("titlebar-right-one")
+            titleRight.innerHTML = ""
+
+            let titleButton = document.createElement("div")
+            titleButton.classList.add("title-button")
+
+            let closeIcon = document.createElement("img")
+            closeIcon.id = "close-icon"
+            closeIcon.alt = "Close call history"
+            closeIcon.src = imgPaths.close
+            closeIcon.addEventListener("click", toggleHistory)
+
+            titleButton.appendChild(closeIcon)
+            titleRight.appendChild(titleButton)
+
+            let iconImages = document.getElementsByClassName("crm-icon")
+            for (let i of iconImages) {
+                i.src = imgPaths.redtailSmall
             }
         }
 
         function generateCard(lookup, fieldsToDisplay) {
-            try {
-              let lookupCard = document.createElement("div");
-              lookupCard.classList.add("lookup-card")
-              let results = lookup?.results || []
+            let lookupCard = document.createElement("div");
+            lookupCard.classList.add("lookup-card")
+            let results = lookup?.results || []
 
-              // crm icon
-              if(lookup?.crm) {
-                  let iconRow = document.createElement("div")
-                  iconRow.classList.add("crm-icon-row", "center")
-                  
-                  let iconImg = document.createElement("img")
-                  iconImg.classList.add("crm-icon")
-                  iconImg.src = `build/${lookup.crm.toLowerCase()}-icon-small.png`
-                  iconImg.alt = `${lookup.crm} CRM`
+            // crm icon
+            if(lookup?.crm) {
+                let iconRow = document.createElement("div")
+                iconRow.classList.add("crm-icon-row", "center")
+                
+                let iconImg = document.createElement("img")
+                iconImg.classList.add("crm-icon")
+                iconImg.src = imgPaths.redtailSmall
+                iconImg.alt = `${lookup.crm} CRM`
 
-                  iconRow.appendChild(iconImg)
-                  lookupCard.appendChild(iconRow)
-              }
+                iconRow.appendChild(iconImg)
+                lookupCard.appendChild(iconRow)
+            }
 
-              // details message
-              if(lookup?.details || lookup?.input){
-                  let detailsRow = document.createElement("div")
-                  detailsRow.classList.add("details-row", "center")
+            // details message
+            if(lookup?.details || lookup?.input){
+                let detailsRow = document.createElement("div")
+                detailsRow.classList.add("details-row", "center")
 
-                  if(lookup?.details){
-                      let detailsSpan = document.createElement("span")
-                      detailsSpan.innerHTML = lookup.details
-                      detailsSpan.classList.add("details",results.length === 1 ? "orange" : "red")
-                      detailsRow.appendChild(detailsSpan)
-                  }
-
-                  if(lookup?.input) {
-                      let lookupBySpan = document.createElement("span")
-                      lookupBySpan.innerHTML = lookup.input
-                      lookupBySpan.classList.add("lookup-by")
-                      detailsRow.appendChild(lookupBySpan)
-                  }
-
-                  lookupCard.appendChild(detailsRow)
-              }
-
-              // contact names and details
-              if(results.length > 0){
-                let contactNamesDiv = document.createElement("div")
-                contactNamesDiv.classList.add("contact-names-col","scroll-enabled")
-
-                let contactDetailsDiv = document.createElement("div")
-                contactDetailsDiv.classList.add("contact-details-col","scroll-enabled")
-
-                // Redtail fields
-                contactDetailsDiv.appendChild(makeField("Type: ", "redtail-type"))
-                contactDetailsDiv.appendChild(makeField("Salutation: ", "redtail-salutation"))
-                contactDetailsDiv.appendChild(makeField("Nickname: ", "redtail-nickname"))
-                contactDetailsDiv.appendChild(makeField("Suffix: ", "redtail-suffix"))
-                contactDetailsDiv.appendChild(makeField("Designation: ", "redtail-designation"))
-                contactDetailsDiv.appendChild(makeField("DOB: ", "redtail-dob"))
-                contactDetailsDiv.appendChild(makeField("Gender: ", "redtail-gender"))
-                contactDetailsDiv.appendChild(makeField("Employer: ", "redtail-employer"))
-                contactDetailsDiv.appendChild(makeField("Job Title: ", "redtail-job-title"))
-                contactDetailsDiv.appendChild(makeField("Category: ", "redtail-category"))
-                contactDetailsDiv.appendChild(makeField("Status: ", "redtail-status"))
-                contactDetailsDiv.appendChild(makeField("Source: ", "redtail-source"))
-                contactDetailsDiv.appendChild(makeField("Referred By: ", "redtail-referred-by"))
-                contactDetailsDiv.appendChild(makeField("Tax ID: ", "redtail-tax-id"))
-                contactDetailsDiv.appendChild(makeField("Marital Status: ", "redtail-marital-status"))
-                contactDetailsDiv.appendChild(makeField("Marital Date: ", "redtail-marital-date"))
-                contactDetailsDiv.appendChild(makeField("Client Since: ", "redtail-client-since"))
-                contactDetailsDiv.appendChild(makeField("Servicing Advisor: ", "redtail-servicing-advisor"))
-                contactDetailsDiv.appendChild(makeField("Writing Advisor: ", "redtail-writing-advisor"))
-                contactDetailsDiv.appendChild(makeField("Email Addresses: ", "redtail-email-addresses"))
-                contactDetailsDiv.appendChild(makeField("Street Addresses: ", "redtail-street-addresses"))
-                contactDetailsDiv.appendChild(makeField("Phone Numbers: ", "redtail-phone-numbers"))
-                  
-
-                for (const [index, contact] of results.entries()) {
-                    let nameSpan = document.createElement("span")
-                    if(index === 0) {
-                        nameSpan.classList.add("contact-name-active")
-                        setFields(lookup?.crm, contact, contactDetailsDiv)
-                    } else {
-                        nameSpan.classList.add("contact-name-inactive")
-                    }
-                    if(lookup?.crm === "Redtail") {
-                        nameSpan.innerHTML = contact?.full_name || "<MISSING>"
-                    }
-                    nameSpan.addEventListener("click", (e)=>{changeContact(e, lookup?.crm, contact, contactNamesDiv, contactDetailsDiv)})
-                    contactNamesDiv.appendChild(nameSpan)
+                if(lookup?.details){
+                    let detailsSpan = document.createElement("span")
+                    detailsSpan.innerHTML = lookup.details
+                    detailsSpan.classList.add("details",results.length === 1 ? "orange" : "red")
+                    detailsRow.appendChild(detailsSpan)
                 }
-                displayFields(fieldsToDisplay, contactDetailsDiv)
-                lookupCard.appendChild(contactNamesDiv)
-                lookupCard.appendChild(contactDetailsDiv)
-              }
 
-              // timestamp
-              if (lookup?.timestamp){
-                  let timestampRow = document.createElement("div")
-                  timestampRow.classList.add("timestamp-row", "center")
-                  let timestampSpan = document.createElement("span")
-                  timestampSpan.classList.add("timestamp")
-                  let formattedDate = new Date(lookup.timestamp).toLocaleString()
-                  timestampSpan.innerHTML = "Received " + formattedDate;
+                if(lookup?.input) {
+                    let lookupBySpan = document.createElement("span")
+                    lookupBySpan.innerHTML = lookup.input
+                    lookupBySpan.classList.add("lookup-by")
+                    detailsRow.appendChild(lookupBySpan)
+                }
 
-                  timestampRow.appendChild(timestampSpan)
-                  lookupCard.appendChild(timestampRow)
-              }
-              return lookupCard              
-          } catch (err) {
-              // disregard errors
-              console.log(err)
-          }
+                lookupCard.appendChild(detailsRow)
+            }
+
+            // contact names and details
+            if(results.length > 0){
+            let contactNamesDiv = document.createElement("div")
+            contactNamesDiv.classList.add("contact-names-col","scroll-enabled")
+
+            let contactDetailsDiv = document.createElement("div")
+            contactDetailsDiv.classList.add("contact-details-col","scroll-enabled")
+
+            // Redtail fields
+            contactDetailsDiv.appendChild(makeField("Type: ", "redtail-type"))
+            contactDetailsDiv.appendChild(makeField("Salutation: ", "redtail-salutation"))
+            contactDetailsDiv.appendChild(makeField("Nickname: ", "redtail-nickname"))
+            contactDetailsDiv.appendChild(makeField("Suffix: ", "redtail-suffix"))
+            contactDetailsDiv.appendChild(makeField("Designation: ", "redtail-designation"))
+            contactDetailsDiv.appendChild(makeField("DOB: ", "redtail-dob"))
+            contactDetailsDiv.appendChild(makeField("Gender: ", "redtail-gender"))
+            contactDetailsDiv.appendChild(makeField("Employer: ", "redtail-employer"))
+            contactDetailsDiv.appendChild(makeField("Job Title: ", "redtail-job-title"))
+            contactDetailsDiv.appendChild(makeField("Category: ", "redtail-category"))
+            contactDetailsDiv.appendChild(makeField("Status: ", "redtail-status"))
+            contactDetailsDiv.appendChild(makeField("Source: ", "redtail-source"))
+            contactDetailsDiv.appendChild(makeField("Referred By: ", "redtail-referred-by"))
+            contactDetailsDiv.appendChild(makeField("Tax ID: ", "redtail-tax-id"))
+            contactDetailsDiv.appendChild(makeField("Marital Status: ", "redtail-marital-status"))
+            contactDetailsDiv.appendChild(makeField("Marital Date: ", "redtail-marital-date"))
+            contactDetailsDiv.appendChild(makeField("Client Since: ", "redtail-client-since"))
+            contactDetailsDiv.appendChild(makeField("Servicing Advisor: ", "redtail-servicing-advisor"))
+            contactDetailsDiv.appendChild(makeField("Writing Advisor: ", "redtail-writing-advisor"))
+            contactDetailsDiv.appendChild(makeField("Email Addresses: ", "redtail-email-addresses"))
+            contactDetailsDiv.appendChild(makeField("Street Addresses: ", "redtail-street-addresses"))
+            contactDetailsDiv.appendChild(makeField("Phone Numbers: ", "redtail-phone-numbers"))
+                
+
+            for (const [index, contact] of results.entries()) {
+                let nameSpan = document.createElement("span")
+                if(index === 0) {
+                    nameSpan.classList.add("contact-name-active")
+                    setFields(lookup?.crm, contact, contactDetailsDiv)
+                } else {
+                    nameSpan.classList.add("contact-name-inactive")
+                }
+                if(lookup?.crm === "Redtail") {
+                    nameSpan.innerHTML = contact?.full_name || "<MISSING>"
+                }
+                nameSpan.addEventListener("click", (e)=>{changeContact(e, lookup?.crm, contact, contactNamesDiv, contactDetailsDiv)})
+                contactNamesDiv.appendChild(nameSpan)
+            }
+            displayFields(fieldsToDisplay, contactDetailsDiv)
+            lookupCard.appendChild(contactNamesDiv)
+            lookupCard.appendChild(contactDetailsDiv)
+            }
+
+            // timestamp
+            if (lookup?.timestamp){
+                let timestampRow = document.createElement("div")
+                timestampRow.classList.add("timestamp-row", "center")
+                let timestampSpan = document.createElement("span")
+                timestampSpan.classList.add("timestamp")
+                let formattedDate = new Date(lookup.timestamp).toLocaleString()
+                timestampSpan.innerHTML = "Received " + formattedDate;
+
+                timestampRow.appendChild(timestampSpan)
+                lookupCard.appendChild(timestampRow)
+            }
+            return lookupCard
         }
 
         function makeField(labelText, className){
@@ -159,109 +195,100 @@
         }
 
         function setFields(crm, contact, detailsDiv) {
-            try {
-                let fields = detailsDiv.getElementsByTagName("span");
-                if(fields.length > 0) {
-                    for(let field of fields){
-                        field.innerHTML = "";
-                    }
-                    for (let field of fields){
-                        if(crm === "Redtail") {
-                            if(field.classList.contains("redtail-type")) { field.innerHTML = contact?.type || "<Missing>"; }
-                            if(field.classList.contains("redtail-salutation")) { field.innerHTML = contact?.salutation || "<Missing>"; }
-                            if(field.classList.contains("redtail-nickname")) { field.innerHTML = contact?.nickname || "<Missing>"; }
-                            if(field.classList.contains("redtail-suffix")) { field.innerHTML = contact?.suffix || "<Missing>"; }
-                            if(field.classList.contains("redtail-designation")) { field.innerHTML = contact?.designation || "<Missing>"; }
-                            if(field.classList.contains("redtail-dob")) { field.innerHTML = contact?.dob || "<Missing>"; }
-                            if(field.classList.contains("redtail-gender")) { field.innerHTML = contact?.gender || "<Missing>"; }
-                            if(field.classList.contains("redtail-employer")) { field.innerHTML = contact?.employer || "<Missing>"; }
-                            if(field.classList.contains("redtail-job-title")) { field.innerHTML = contact?.job_title || "<Missing>"; }
-                            if(field.classList.contains("redtail-category")) { field.innerHTML = contact?.category || "<Missing>"; }
-                            if(field.classList.contains("redtail-status")) { field.innerHTML = contact?.status || "<Missing>"; }
-                            if(field.classList.contains("redtail-source")) { field.innerHTML = contact?.source || "<Missing>"; }
-                            if(field.classList.contains("redtail-referred-by")) { field.innerHTML = contact?.referred_by || "<Missing>"; }
-                            if(field.classList.contains("redtail-tax-id")) { field.innerHTML = contact?.tax_id || "<Missing>"; }
-                            if(field.classList.contains("redtail-marital-status")) { field.innerHTML = contact?.marital_status || "<Missing>"; }
-                            if(field.classList.contains("redtail-marital-date")) { field.innerHTML = contact?.marital_date || "<Missing>"; }
-                            if(field.classList.contains("redtail-client-since")) { field.innerHTML = contact?.client_since || "<Missing>"; }
-                            if(field.classList.contains("redtail-servicing-advisor")) { field.innerHTML = contact?.servicing_advisor || "<Missing>"; }
-                            if(field.classList.contains("redtail-writing-advisor")) { field.innerHTML = contact?.writing_advisor || "<Missing>"; }
-                            let emailAddresses = ""
-                            if(contact.emails?.length > 0) {
-                                for(let e of contact.emails) {
-                                    if (e?.address) {
-                                        if(emailAddresses) {
-                                            emailAddresses += "; " + e.address
-                                        } else {
-                                            emailAddresses = e.address
-                                        }
-                                    }
-                                }
-                            }
-                            if(field.classList.contains("redtail-email-addresses")) { field.innerHTML = emailAddresses || "<Missing>"; }
-                            let streetAddresses = ""
-                            if(contact.addresses?.length > 0) {
-                                for(let a of contact.addresses) {
-                                    let streetAddress = a?.street_address || ""
-                                    streetAddress += a.secondary_address ? " " + a.secondary_address : ""
-                                    streetAddress += a.city ? " " + a.city : ""
-                                    streetAddress += a.state ? " " + a.state : ""
-                                    streetAddress += a.zip ? " " + a.zip : ""
-                                    if(streetAddresses) {
-                                        streetAddresses += "; " + streetAddress
-                                    } else {
-                                        streetAddresses = streetAddress
-                                    }
-                                }
-                            }
-                            if(field.classList.contains("redtail-street-addresses")) { field.innerHTML = streetAddresses || "<Missing>"; }
-                            let phoneNumbers = ""
-                            if(contact.phones?.length > 0) {
-                                for(let p of contact.phones) {
-                                    if (p?.number) {
-                                        if(phoneNumbers) {
-                                            phoneNumbers += "; " + p.number
-                                        } else {
-                                            phoneNumbers = p.number
-                                        }
-                                    }
-                                }
-                            }
-                            if(field.classList.contains("redtail-phone-numbers")) { field.innerHTML = phoneNumbers || "<Missing>"; }
-                        }
-                    }
-                
+            let fields = detailsDiv.getElementsByTagName("span");
+            if(fields.length > 0) {
+                for(let field of fields){
+                    field.innerHTML = "";
                 }
-                
-            } catch (err) {
-                console.log(err)
+                for (let field of fields){
+                    if(crm === "Redtail") {
+                        if(field.classList.contains("redtail-type")) { field.innerHTML = contact?.type || "<Missing>"; }
+                        if(field.classList.contains("redtail-salutation")) { field.innerHTML = contact?.salutation || "<Missing>"; }
+                        if(field.classList.contains("redtail-nickname")) { field.innerHTML = contact?.nickname || "<Missing>"; }
+                        if(field.classList.contains("redtail-suffix")) { field.innerHTML = contact?.suffix || "<Missing>"; }
+                        if(field.classList.contains("redtail-designation")) { field.innerHTML = contact?.designation || "<Missing>"; }
+                        if(field.classList.contains("redtail-dob")) { field.innerHTML = contact?.dob || "<Missing>"; }
+                        if(field.classList.contains("redtail-gender")) { field.innerHTML = contact?.gender || "<Missing>"; }
+                        if(field.classList.contains("redtail-employer")) { field.innerHTML = contact?.employer || "<Missing>"; }
+                        if(field.classList.contains("redtail-job-title")) { field.innerHTML = contact?.job_title || "<Missing>"; }
+                        if(field.classList.contains("redtail-category")) { field.innerHTML = contact?.category || "<Missing>"; }
+                        if(field.classList.contains("redtail-status")) { field.innerHTML = contact?.status || "<Missing>"; }
+                        if(field.classList.contains("redtail-source")) { field.innerHTML = contact?.source || "<Missing>"; }
+                        if(field.classList.contains("redtail-referred-by")) { field.innerHTML = contact?.referred_by || "<Missing>"; }
+                        if(field.classList.contains("redtail-tax-id")) { field.innerHTML = contact?.tax_id || "<Missing>"; }
+                        if(field.classList.contains("redtail-marital-status")) { field.innerHTML = contact?.marital_status || "<Missing>"; }
+                        if(field.classList.contains("redtail-marital-date")) { field.innerHTML = contact?.marital_date || "<Missing>"; }
+                        if(field.classList.contains("redtail-client-since")) { field.innerHTML = contact?.client_since || "<Missing>"; }
+                        if(field.classList.contains("redtail-servicing-advisor")) { field.innerHTML = contact?.servicing_advisor || "<Missing>"; }
+                        if(field.classList.contains("redtail-writing-advisor")) { field.innerHTML = contact?.writing_advisor || "<Missing>"; }
+                        let emailAddresses = ""
+                        if(contact.emails?.length > 0) {
+                            for(let e of contact.emails) {
+                                if (e?.address) {
+                                    if(emailAddresses) {
+                                        emailAddresses += "; " + e.address
+                                    } else {
+                                        emailAddresses = e.address
+                                    }
+                                }
+                            }
+                        }
+                        if(field.classList.contains("redtail-email-addresses")) { field.innerHTML = emailAddresses || "<Missing>"; }
+                        let streetAddresses = ""
+                        if(contact.addresses?.length > 0) {
+                            for(let a of contact.addresses) {
+                                let streetAddress = a?.street_address || ""
+                                streetAddress += a.secondary_address ? " " + a.secondary_address : ""
+                                streetAddress += a.city ? " " + a.city : ""
+                                streetAddress += a.state ? " " + a.state : ""
+                                streetAddress += a.zip ? " " + a.zip : ""
+                                if(streetAddresses) {
+                                    streetAddresses += "; " + streetAddress
+                                } else {
+                                    streetAddresses = streetAddress
+                                }
+                            }
+                        }
+                        if(field.classList.contains("redtail-street-addresses")) { field.innerHTML = streetAddresses || "<Missing>"; }
+                        let phoneNumbers = ""
+                        if(contact.phones?.length > 0) {
+                            for(let p of contact.phones) {
+                                if (p?.number) {
+                                    if(phoneNumbers) {
+                                        phoneNumbers += "; " + p.number
+                                    } else {
+                                        phoneNumbers = p.number
+                                    }
+                                }
+                            }
+                        }
+                        if(field.classList.contains("redtail-phone-numbers")) { field.innerHTML = phoneNumbers || "<Missing>"; }
+                    }
+                }
+            
             }
         }
 
         // display fields specified in user settings, hide all others
         function displayFields(fieldsToDisplay, detailsDiv){
-            try {
-                let labels = detailsDiv.getElementsByTagName("h1");
-                if(labels.length > 0) {
-                    for(let label of labels){
-                        let spans = label.getElementsByTagName("span");
-                        if(spans.length > 0){
-                            let isWhitelisted = false
-                            for (let f of fieldsToDisplay){
-                                if(spans[0].classList.contains(f)){
-                                    isWhitelisted = true
-                                }
+            let labels = detailsDiv.getElementsByTagName("h1");
+            if(labels.length > 0) {
+                for(let label of labels){
+                    let spans = label.getElementsByTagName("span");
+                    if(spans.length > 0){
+                        let isWhitelisted = false
+                        for (let f of fieldsToDisplay){
+                            if(spans[0].classList.contains(f)){
+                                isWhitelisted = true
                             }
-                            if(isWhitelisted){
-                                label.classList.remove("hidden")
-                            } else {
-                                label.classList.add("hidden")
-                            }
+                        }
+                        if(isWhitelisted){
+                            label.classList.remove("hidden")
+                        } else {
+                            label.classList.add("hidden")
                         }
                     }
                 }
-            } catch (err) {
-                console.log(err)
             }
         }
 
@@ -284,18 +311,11 @@
 
     <header id="titlebar">
         <div id="drag-region">
-            <div id="titlebar-left">
-                <img id="app-icon" src="build/icon.png" alt="Teleworks"/>
-                <span id="app-name">MINIP<span class="orange">O</span>P</span>
-            </div>
+            <div id="titlebar-left"></div>
             <div id="titlebar-center">
                 <span id="window-name">CALL HISTORY</span>
             </div>
-            <div id="titlebar-right-one">
-                <div class="title-button">
-                    <img  id="close-icon" src="build/close.svg" alt="Close to tray"/>
-                </div>
-            </div>
+            <div id="titlebar-right-one"></div>
         </div>
     </header>
     <div id="lookup-cards" class="scroll-enabled"></div>

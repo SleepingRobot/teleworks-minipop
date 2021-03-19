@@ -8,24 +8,29 @@
 </head>
 <body>
     <script>
-        document.onreadystatechange = (event) => {
-            if (document.readyState == "complete") {
-                document.getElementById("close-icon").addEventListener("click", toggleSettings)
-            }
-        };
+        let imgPaths = {
+            app: '',
+            history: '',
+            settings: '',
+            close: '',
+            redtailSmall: '',
+            redtailFull: ''
+        }
+
+        window.electron.receive('image-paths', (p) => {
+            imgPaths = p
+            refreshImages()
+        });
 
         function toggleSettings() {
             window.electron.send("toggle-settings");
         }
 
         window.electron.receive("settings-data", (auth, fieldsToDisplay) => {
-            console.log("refreshing")
-            console.log(auth)
             refresh(auth, fieldsToDisplay)
         });
 
         function logout(){
-            console.log("logging out!")
             window.electron.send("crm-logout", "Redtail")
         }
 
@@ -42,13 +47,12 @@
         }
 
         function toggleField(event, labelVal, inputVal) {
-            console.log(event)
             let fieldData = {
                 action: event.target?.checked ? "add" : "remove",
                 label: labelVal,
                 input: inputVal
             }
-           window.electron.send("toggle-displayfield", fieldData)
+            window.electron.send("toggle-displayfield", fieldData)
         }
 
         function refresh(auth, fieldsToDisplay){
@@ -142,6 +146,49 @@
             fields.appendChild(makeField("Phone Numbers", "redtail-phone-numbers", fieldsToDisplay))
         }
 
+        function refreshImages() {
+            let titleLeft = document.getElementById("titlebar-left")
+            titleLeft.innerHTML = ""
+
+            let appIcon = document.createElement("img")
+            appIcon.id = "app-icon"
+            appIcon.alt = "Teleworks MiniPop"
+            appIcon.src = imgPaths.app
+
+            let appName = document.createElement("span")
+            appName.id = "app-name"
+            appName.innerHTML = 'MINIP<span class="orange">O</span>P'
+
+            titleLeft.appendChild(appIcon)
+            titleLeft.appendChild(appName)
+
+
+            let titleRight = document.getElementById("titlebar-right-one")
+            titleRight.innerHTML = ""
+
+            let titleButton = document.createElement("div")
+            titleButton.classList.add("title-button")
+
+            let closeIcon = document.createElement("img")
+            closeIcon.id = "close-icon"
+            closeIcon.alt = "Close settings"
+            closeIcon.src = imgPaths.close
+            closeIcon.addEventListener("click", toggleSettings)
+
+            titleButton.appendChild(closeIcon)
+            titleRight.appendChild(titleButton)
+
+            let settingsLogoRow = document.getElementById("settings-logo-row")
+            settingsLogoRow.innerHTML = ""
+
+            let settingsLogoImg = document.createElement("img")
+            settingsLogoImg.id = "settings-logo-img"
+            settingsLogoImg.alt = "Redtail CRM"
+            settingsLogoImg.src = imgPaths.redtailFull
+
+            settingsLogoRow.appendChild(settingsLogoImg)
+        }
+
         function makeField(labelVal, inputVal, fieldsToDisplay){
             let isChecked = fieldsToDisplay.includes(inputVal)
             let field = document.createElement("div")
@@ -164,15 +211,13 @@
     <header id="titlebar">
         <div id="drag-region">
             <div id="titlebar-left">
-                <img id="app-icon" src="build/icon.png" alt="Teleworks"/>
-                <span id="app-name">MINIP<span class="orange">O</span>P</span>
             </div>
             <div id="titlebar-center">
                 <span id="window-name">SETTINGS</span>
             </div>
             <div id="titlebar-right-one">
                 <div class="title-button">
-                    <img  id="close-icon" src="build/close.svg" alt="Close to tray"/>
+                    <img  id="close-icon" alt="Close to tray"/>
                 </div>
             </div>
         </div>
@@ -182,14 +227,11 @@
             <span id="crm-redtail" class="settings-crm-active"><span>Redtail</span></span>
         </div>
         <div id="settings-right">
-            <div id="settings-logo-row">
-                <img id="settings-logo-img" src="build/redtail-icon-full.png" alt="Redtail CRM" />
-            </div>
+            <div id="settings-logo-row"></div>
             <div class="settings-banner">Authentication</div>
             <div id="settings-auth"></div>
             <div class="settings-banner">Display Fields</div>
-            <div id="settings-fields" class="scroll-enabled">
-            </div>
+            <div id="settings-fields" class="scroll-enabled"></div>
         </div>
     </div>
 </body>

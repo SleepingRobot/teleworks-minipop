@@ -9,11 +9,21 @@
 <body>
     <script>
         let authData = {}
-        document.onreadystatechange = (event) => {
-            if (document.readyState == "complete") {
-                document.getElementById("close-icon").addEventListener("click", hideApp)
-            }
-        };
+
+        let imgPaths = {
+            app: '',
+            history: '',
+            settings: '',
+            close: '',
+            redtailSmall: '',
+            redtailFull: ''
+        }
+
+        window.electron.receive('image-paths', (p) => {
+            imgPaths = p
+            refreshImages()
+        });
+
         window.electron.receive('auth-data', (data) => {
             authData = data
             document.getElementsByClassName("auth-message")[0].innerHTML = authData?.message || ""
@@ -37,29 +47,67 @@
             document.getElementById("password").value = ""
             document.getElementById("api-key").value = ""
         }
+
+        function refreshImages() {
+            let titleLeft = document.getElementById("titlebar-left")
+            titleLeft.innerHTML = ""
+
+            let appIcon = document.createElement("img")
+            appIcon.id = "app-icon"
+            appIcon.alt = "Teleworks MiniPop"
+            appIcon.src = imgPaths.app
+
+            let appName = document.createElement("span")
+            appName.id = "app-name"
+            appName.innerHTML = 'MINIP<span class="orange">O</span>P'
+
+            titleLeft.appendChild(appIcon)
+            titleLeft.appendChild(appName)
+
+
+            let titleRight = document.getElementById("titlebar-right-one")
+            titleRight.innerHTML = ""
+
+            let titleButton = document.createElement("div")
+            titleButton.classList.add("title-button")
+
+            let closeIcon = document.createElement("img")
+            closeIcon.id = "close-icon"
+            closeIcon.alt = "Close to tray"
+            closeIcon.src = imgPaths.close
+            closeIcon.addEventListener("click", hideApp)
+
+            titleButton.appendChild(closeIcon)
+            titleRight.appendChild(titleButton)
+
+            let authCrmLogoRow = document.getElementById("auth-crm-logo-row")
+            authCrmLogoRow.innerHTML = ""
+
+            let authCrmLogoImg = document.createElement("img")
+            authCrmLogoImg.id = "auth-crm-logo"
+            authCrmLogoImg.alt = "Redtail CRM"
+            authCrmLogoImg.src = imgPaths.redtailFull
+
+            authCrmLogoRow.appendChild(authCrmLogoImg)
+        }
     </script>
 
     <header id="titlebar">
         <div id="drag-region">
-            <div id="titlebar-left">
-                <img id="app-icon" src="build/icon.png" alt="Teleworks"/>
-                <span id="app-name">MINIP<span class="orange">O</span>P</span>
-            </div>
+            <div id="titlebar-left"></div>
             <div id="titlebar-center">
                 <span id="window-name">AUTHENTICATE</span>
             </div>
             <div id="titlebar-right-one">
                 <div class="title-button">
-                    <img  id="close-icon" src="build/close.svg" alt="Close to tray"/>
+                    <img  id="close-icon" alt="Close to tray"/>
                 </div>
             </div>
         </div>
     </header>
     <div id="auth-modal-container">
         <div id="auth-modal-subcontainer">
-            <div id="auth-crm-logo-row">
-                <img id="auth-crm-logo" src="build/redtail-icon-full.png" alt="Redtail CRM" />
-            </div>
+            <div id="auth-crm-logo-row"></div>
             <div class="auth-message-row">
                 <div class="auth-message"></div>
             </div>

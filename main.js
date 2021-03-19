@@ -1,8 +1,9 @@
+const unhandled = require('electron-unhandled')
+unhandled()
 const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron')
-const fs = require('fs');
-const crypto = require('crypto');
-const path = require ('path');
-const isDev = require('electron-is-dev');
+const fs = require('fs')
+const crypto = require('crypto')
+const path = require('path')
 const keytar = require('keytar')
 const isPrimaryInstance = app.requestSingleInstanceLock()
 const keytarService = 'teleworks-screenpop'
@@ -23,6 +24,7 @@ let settings = {
   lookups: [],
   fieldsToDisplay: ["redtail-status", "redtail-source", "redtail-category"]
 }
+let imgPaths = {}
 
 if(isPrimaryInstance) {
   // If this is the primary instance and a secondary instance is opened
@@ -49,6 +51,7 @@ app.on('ready', () => setTimeout(onAppReady, 500));
 
 async function onAppReady() {
   initTrayIcon()
+  resolveImgPaths()
   initWindows()
   //await clearAuth('Redtail')
   await checkKeychainForAuth()
@@ -58,7 +61,7 @@ async function onAppReady() {
 }
 
 function initTrayIcon() {
-  tray = new Tray(`${__dirname}/build/icon-bg.png`)
+  tray = new Tray(`${__dirname}/build/icon.ico`)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Teleworks MiniPop', type: 'normal', enabled: false},
     { type: 'separator'},
@@ -67,6 +70,15 @@ function initTrayIcon() {
   ])
   tray.setToolTip('Teleworks MiniPop')
   tray.setContextMenu(contextMenu)
+}
+
+function resolveImgPaths() {
+  imgPaths.app = path.join(process.resourcesPath, 'extraResources', 'icon.png');
+  imgPaths.history = path.join(process.resourcesPath, 'extraResources', 'history.svg');
+  imgPaths.settings = path.join(process.resourcesPath, 'extraResources', 'settings.svg');
+  imgPaths.close = path.join(process.resourcesPath, 'extraResources', 'close.svg');
+  imgPaths.redtailSmall = path.join(process.resourcesPath, 'extraResources', 'redtail-icon-small.png');
+  imgPaths.redtailFull = path.join(process.resourcesPath, 'extraResources', 'redtail-icon-full.png');
 }
 
 function initWindows() {
@@ -93,21 +105,34 @@ function initWindows() {
   screenpopWindow.removeMenu()
   screenpopWindow.loadFile('screenpop.html')
   screenpopWindow.on('close', closeToTray)
+  screenpopWindow.webContents.once('did-finish-load', () => {
+    screenpopWindow.webContents.send('image-paths', imgPaths)
+  })
   //screenpopWindow.webContents.openDevTools()
   historyWindow = new BrowserWindow({...windowOptions, width:400, height:600, show:false, parent:screenpopWindow})
   historyWindow.removeMenu()
   historyWindow.loadFile('history.html')
   historyWindow.hide()
+  historyWindow.webContents.once('did-finish-load', () => {
+    historyWindow.webContents.send('image-paths', imgPaths)
+  })
   //historyWindow.webContents.openDevTools()
   settingsWindow = new BrowserWindow({...windowOptions, width:400, height:600, show:false, parent:screenpopWindow})
   settingsWindow.removeMenu()
   settingsWindow.loadFile('settings.html')
   settingsWindow.hide()
+  settingsWindow.webContents.once('did-finish-load', () => {
+    settingsWindow.webContents.send('image-paths', imgPaths)
+    settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+  })
   //settingsWindow.webContents.openDevTools()
   authWindow = new BrowserWindow({...windowOptions, width:400, height:300, maxWidth:400, maxHeight:300, resizable:false, show:false, parent:screenpopWindow})
   authWindow.removeMenu()
   authWindow.loadFile('auth.html')
   authWindow.on('close', closeToTray)
+  authWindow.webContents.once('did-finish-load', () => {
+    authWindow.webContents.send('image-paths', imgPaths)
+  })
   //authWindow.webContents.openDevTools()
 }
 
@@ -145,7 +170,7 @@ async function getEncryptionSecrets() {
 // Reads settings from encrypted file on disk, if present
 // TODO: Add better error handling
 async function loadSettings() {
-  const settingsFile = path.resolve('./minipop.sec')
+  const settingsFile = path.resolve(process.env.PORTABLE_EXECUTABLE_DIR, 'minipop.sec')
   const secrets = await getEncryptionSecrets()
   const decipher = crypto.createDecipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
   try {
@@ -153,10 +178,13 @@ async function loadSettings() {
     const output = Buffer.concat([decipher.update(input), decipher.final()])
     if(output){
       settings = JSON.parse(output)
-      settingsWindow.once('ready-to-show', () => {
+      if (!settingsWindow.webContents.isLoading()) {
         settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
-      })
-      
+      } else {
+        settingsWindow.webContents.once('did-finish-load', () => {
+          settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+        })
+      }
     }
   } catch (err) {
     logErr('Error reading lookup history from disk: ')
@@ -167,7 +195,8 @@ async function loadSettings() {
 // Saves settings to encrypted file on disk
 // TODO: Add better error handling
 async function saveSettings() {
-  const settingsFile = path.resolve('./minipop.sec')
+  const settingsFile = path.resolve(process.env.PORTABLE_EXECUTABLE_DIR, 'minipop.sec')
+  console.log(settingsFile)
   const secrets = await getEncryptionSecrets()
   const cipher = crypto.createCipheriv('aes-256-cbc', secrets?.key, secrets?.iv)
   const output = Buffer.concat([cipher.update(JSON.stringify(settings)), cipher.final()])
@@ -358,7 +387,13 @@ ipcMain.on('auth-submission', async (event, authData) => {
 // logout of CRM via settings window
 ipcMain.on('crm-logout', async (event, crm) => {
   await clearAuth(crm)
-  settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+  if (!settingsWindow.webContents.isLoading()) {
+    settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+  } else {
+    settingsWindow.webContents.once('did-finish-load', () => {
+      settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+    })
+  }
 })
 
 // login to CRM via settings window
@@ -491,7 +526,13 @@ function authenticateRedtail(authData, UserkeyToken = '') {
               keytar.setPassword(keytarService, 'redtail-userkey', encodedUserKey)
             }
             // finally, attempt to resolve any pending lookups and refresh Screenpop + History + Settings windows
-            settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+            if (!settingsWindow.webContents.isLoading()) {
+              settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+            } else {
+              settingsWindow.webContents.once('did-finish-load', () => {
+                settingsWindow.webContents.send('settings-data', auth, settings.fieldsToDisplay)
+              })
+            }
             attemptPendingLookups()
           }
         }

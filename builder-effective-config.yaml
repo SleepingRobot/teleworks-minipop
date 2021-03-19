@@ -1,0 +1,10 @@
+directories:
+  output: .
+  buildResources: ./build
+  app: .
+productName: Teleworks MiniPop
+appId: com.electron.teleworks-minipop
+win:
+  target: portable
+  icon: build/icon.ico
+electronVersion: 11.3.0

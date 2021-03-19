@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld(
       }
     },
     receive: (channel, func) => {
-      const validChannels = ['screenpop-data', 'auth-data', 'history-data', 'settings-data'];
+      const validChannels = ['screenpop-data', 'auth-data', 'history-data', 'settings-data', 'image-paths'];
       if (validChannels.includes(channel)) {
           ipcRenderer.on(channel, (event, ...args) => func(...args));
       }
